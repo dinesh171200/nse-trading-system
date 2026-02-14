@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: nse-mongodb
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=nse_trading
+    restart: unless-stopped
+    networks:
+      - nse-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nse-backend
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/nse_trading
+      - PORT=5000
+      - WS_PORT=5001
+      - NSE_BASE_URL=https://www.nseindia.com
+      - NSE_TIMEOUT=10000
+      - NSE_RETRY_COUNT=3
+      - MARKET_OPEN_HOUR=9
+      - MARKET_OPEN_MINUTE=15
+      - MARKET_CLOSE_HOUR=15
+      - MARKET_CLOSE_MINUTE=30
+      - DATA_AGENT_INTERVAL=60000
+      - CHART_AGENT_ENABLED=true
+      - SIGNAL_AGENT_ENABLED=true
+      - MIN_CONFIDENCE=50
+      - SIGNAL_EXPIRY_HOURS=4
+      - HISTORICAL_DAYS=5
+      - LOG_LEVEL=info
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+    networks:
+      - nse-network
+
+  agents:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nse-agents
+    command: node agents/agent-manager.js
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/nse_trading
+      - NSE_BASE_URL=https://www.nseindia.com
+      - NSE_TIMEOUT=10000
+      - NSE_RETRY_COUNT=3
+      - MARKET_OPEN_HOUR=9
+      - MARKET_OPEN_MINUTE=15
+      - MARKET_CLOSE_HOUR=15
+      - MARKET_CLOSE_MINUTE=30
+      - DATA_AGENT_INTERVAL=60000
+      - CHART_AGENT_ENABLED=true
+      - SIGNAL_AGENT_ENABLED=true
+      - MIN_CONFIDENCE=50
+      - SIGNAL_EXPIRY_HOURS=4
+      - LOG_LEVEL=info
+    depends_on:
+      - mongodb
+      - backend
+    restart: unless-stopped
+    networks:
+      - nse-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        - REACT_APP_API_URL=http://localhost:5000
+        - REACT_APP_WS_URL=ws://localhost:5001
+    container_name: nse-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - nse-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  nse-network:
+    driver: bridge

@@ -1,0 +1,347 @@
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  color: white;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+  border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.05) 50%, transparent 70%);
+  pointer-events: none;
+}
+
+.header-left {
+  flex: 1;
+  z-index: 1;
+}
+
+.header-title {
+  font-size: 1.8rem;
+  margin: 0 0 0.5rem 0;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  letter-spacing: -0.5px;
+  flex-wrap: wrap;
+}
+
+.made-by {
+  font-size: 0.7rem;
+  font-weight: 500;
+  opacity: 0.8;
+  background: linear-gradient(135deg, #00ff88 0%, #00bfff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  padding: 4px 12px;
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 20px;
+  backdrop-filter: blur(5px);
+  background-color: rgba(0, 255, 136, 0.1);
+  text-shadow: none;
+  letter-spacing: 0.5px;
+  animation: fadeIn 2s ease-in-out;
+}
+
+.header-title .icon {
+  font-size: 2.2rem;
+  animation: rotate 3s linear infinite;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+}
+
+@keyframes rotate {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(5deg) scale(1.05);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 0.8;
+    transform: translateY(0);
+  }
+}
+
+.header-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.95;
+  font-weight: 500;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.3px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  z-index: 1;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.status-item:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  position: relative;
+}
+
+.status-dot::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  opacity: 0;
+  animation: ripple 2s infinite;
+}
+
+.status-dot.green {
+  background-color: #00ff88;
+  box-shadow: 0 0 12px rgba(0, 255, 136, 0.8);
+  color: #00ff88;
+}
+
+.status-dot.red {
+  background-color: #ff4444;
+  box-shadow: 0 0 12px rgba(255, 68, 68, 0.8);
+  color: #ff4444;
+}
+
+.status-dot.gray {
+  background-color: #aaa;
+  animation: none;
+}
+
+.status-dot.gray::after {
+  display: none;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes ripple {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2);
+  }
+}
+
+.status-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.market-time {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.market-time:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.time-display {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+}
+
+.time-date {
+  font-size: 0.75rem;
+  opacity: 0.85;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.time-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+  letter-spacing: 1px;
+}
+
+.time-zone {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .header {
+    padding: 1.2rem 1.5rem;
+  }
+
+  .header-title {
+    font-size: 1.5rem;
+  }
+
+  .header-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .header-right {
+    gap: 1rem;
+  }
+
+  .status-item {
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .header-left {
+    text-align: center;
+    width: 100%;
+  }
+
+  .header-title {
+    font-size: 1.3rem;
+    justify-content: center;
+  }
+
+  .header-title .icon {
+    font-size: 1.8rem;
+  }
+
+  .made-by {
+    font-size: 0.65rem;
+    padding: 3px 10px;
+  }
+
+  .header-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .header-right {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .status-item {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.75rem;
+  }
+
+  .time-display {
+    align-items: center;
+  }
+
+  .time-value {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0.75rem;
+  }
+
+  .header-title {
+    font-size: 1.1rem;
+    gap: 0.5rem;
+  }
+
+  .header-title .icon {
+    font-size: 1.5rem;
+  }
+
+  .made-by {
+    font-size: 0.6rem;
+    padding: 2px 8px;
+  }
+
+  .header-subtitle {
+    font-size: 0.75rem;
+  }
+
+  .status-item {
+    font-size: 0.8rem;
+    padding: 0.35rem 0.6rem;
+  }
+
+  .market-time {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .time-value {
+    font-size: 0.9rem;
+  }
+}

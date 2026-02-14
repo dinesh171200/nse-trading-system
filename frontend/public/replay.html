@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Replay Demo - NSE Trading System</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.2.1/dist/chartjs-chart-financial.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: white;
+      padding: 20px 30px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .header h1 {
+      font-size: 28px;
+      color: #2d3748;
+    }
+
+    .status {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .status.connected {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status.disconnected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .controls {
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+
+    .btn-pause {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: white;
+    }
+
+    .btn-stop {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+
+    .progress {
+      margin-top: 15px;
+    }
+
+    .progress-text {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #4a5568;
+    }
+
+    .progress-bar {
+      height: 12px;
+      background: #e2e8f0;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transition: width 0.3s;
+    }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .card h2 {
+      margin-bottom: 20px;
+      color: #2d3748;
+    }
+
+    .price {
+      font-size: 36px;
+      font-weight: 700;
+      color: #2d3748;
+    }
+
+    .change {
+      display: inline-block;
+      margin-left: 15px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .change.positive {
+      background: #d1fae5;
+      color: #10b981;
+    }
+
+    .change.negative {
+      background: #fee2e2;
+      color: #ef4444;
+    }
+
+    .ohlc {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .ohlc-item {
+      padding: 10px;
+      background: #f7fafc;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .signal-action {
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .signal-action.buy {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      color: #065f46;
+    }
+
+    .signal-action.sell {
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      color: #991b1b;
+    }
+
+    .signal-action.hold {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      color: #92400e;
+    }
+
+    .waiting {
+      text-align: center;
+      background: white;
+      padding: 60px;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .waiting h2 {
+      font-size: 32px;
+      margin-bottom: 15px;
+      color: #2d3748;
+    }
+
+    /* Main content layout */
+    .main-layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 1200px) {
+      .main-layout {
+        grid-template-columns: 320px 1fr;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .controls {
+        padding: 15px !important;
+      }
+
+      .card {
+        padding: 15px !important;
+      }
+
+      .main-layout {
+        gap: 15px;
+      }
+
+      .chart-panel {
+        min-height: 400px !important;
+      }
+    }
+
+    .signal-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .chart-panel {
+      min-height: 600px;
+    }
+
+    @media (max-width: 768px) {
+      .chart-panel > .controls > div > div {
+        height: 400px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 Live Replay Demo - Feb 13, 2024</h1>
+      <div id="status" class="status disconnected">🔴 Connecting...</div>
+    </div>
+
+    <div class="controls">
+      <div class="buttons">
+        <button id="btnStart" class="btn-start">▶️ Start Replay</button>
+        <button id="btnPause" class="btn-pause" disabled>⏸️ Pause</button>
+        <button id="btnStop" class="btn-stop">⏹️ Stop</button>
+      </div>
+      <div class="progress">
+        <div id="progressText" class="progress-text">Ready to start...</div>
+        <div class="progress-bar">
+          <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content: Signal + Chart -->
+    <div class="main-layout">
+      <!-- Left: Signal Panel -->
+      <div class="signal-panel">
+        <div id="signalContainer" class="card" style="min-height: 400px;">
+          <h2>📊 Live Signal</h2>
+          <div id="signalData" style="text-align: center; padding: 40px 20px; color: #718096;">
+            <p>Waiting for replay to start...</p>
+          </div>
+        </div>
+
+        <div id="priceContainer" class="card">
+          <h2>💰 Current Price</h2>
+          <div id="priceData"></div>
+        </div>
+      </div>
+
+      <!-- Right: Chart Panel -->
+      <div class="chart-panel">
+        <div class="controls" style="margin: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <h2 style="margin: 0; color: #2d3748;">📈 Live Price Chart</h2>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <select id="timeframeSelect" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #e2e8f0; font-weight: 600; cursor: pointer;">
+                <option value="1">1m</option>
+                <option value="5" selected>5m</option>
+                <option value="15">15m</option>
+              </select>
+              <button id="btnChartLine" class="btn-start" style="padding: 8px 16px; font-size: 14px;">📊 Line</button>
+              <button id="btnChartCandle" class="btn-pause" style="padding: 8px 16px; font-size: 14px;">🕯️ Candle</button>
+            </div>
+          </div>
+          <div style="background: white; padding: 20px; border-radius: 10px; height: 550px;">
+            <canvas id="priceChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signal History Section -->
+    <div class="controls" style="margin-top: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin: 0; color: #2d3748;">📜 Signal History</h2>
+        <div style="display: flex; gap: 10px;">
+          <button id="btnRefreshHistory" class="btn-start" style="padding: 8px 16px; font-size: 14px;">🔄 Refresh</button>
+          <button id="btnToggleHistory" class="btn-pause" style="padding: 8px 16px; font-size: 14px;">▼ Show History</button>
+          <button id="btnClearHistory" class="btn-stop" style="padding: 8px 16px; font-size: 14px;">🗑️ Clear</button>
+        </div>
+      </div>
+      <div id="historyContainer" style="display: none;"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script>
+    const socket = io('http://localhost:3001');
+    let isPlaying = false;
+
+    // Elements
+    const statusEl = document.getElementById('status');
+    const btnStart = document.getElementById('btnStart');
+    const btnPause = document.getElementById('btnPause');
+    const btnStop = document.getElementById('btnStop');
+    const progressText = document.getElementById('progressText');
+    const progressFill = document.getElementById('progressFill');
+    const dataContainer = document.getElementById('dataContainer');
+    const btnToggleHistory = document.getElementById('btnToggleHistory');
+    const btnRefreshHistory = document.getElementById('btnRefreshHistory');
+    const btnClearHistory = document.getElementById('btnClearHistory');
+    const historyContainer = document.getElementById('historyContainer');
+    const btnChartLine = document.getElementById('btnChartLine');
+    const btnChartCandle = document.getElementById('btnChartCandle');
+    const chartCanvas = document.getElementById('priceChart');
+    const timeframeSelect = document.getElementById('timeframeSelect');
+    const signalDataEl = document.getElementById('signalData');
+    const priceDataEl = document.getElementById('priceData');
+
+    let historyExpanded = false;
+    let priceChart = null;
+    let chartType = 'line';
+    let chartData = {
+      labels: [],
+      prices: [],
+      volumes: [],
+      candles: {} // Store candles by timeframe: { '1': [], '5': [], '15': [] }
+    };
+    const maxChartPoints = 100; // Keep last 100 data points for line chart
+    const maxCandlePoints = 60;  // Keep last 60 candles (cleaner view)
+
+    // For grouping ticks into candles
+    let currentCandles = {
+      '1': null,
+      '5': null,
+      '15': null
+    };
+    let candleInterval = 5; // Current selected timeframe in minutes
+
+    // Connection
+    socket.on('connect', () => {
+      statusEl.className = 'status connected';
+      statusEl.textContent = '🟢 Connected';
+      loadData();
+    });
+
+    socket.on('disconnect', () => {
+      statusEl.className = 'status disconnected';
+      statusEl.textContent = '🔴 Disconnected';
+    });
+
+    // Initialize Chart
+    function initChart(type = 'line') {
+      const ctx = chartCanvas.getContext('2d');
+
+      // Destroy existing chart if any
+      if (priceChart) {
+        priceChart.destroy();
+      }
+
+      const timeframe = candleInterval.toString();
+
+      if (type === 'candlestick') {
+        // Initialize candles array for this timeframe if not exists
+        if (!chartData.candles[timeframe]) {
+          chartData.candles[timeframe] = [];
+        }
+
+        const candleData = chartData.candles[timeframe];
+        console.log(`Candlestick chart for ${timeframe}m - ${candleData.length} candles`);
+
+        // If no candles yet, show message
+        if (candleData.length === 0) {
+          console.log('No candle data yet, waiting for data...');
+        }
+
+        priceChart = new Chart(ctx, {
+          type: 'candlestick',
+          data: {
+            datasets: [{
+              label: `NIFTY 50 (${timeframe}m)`,
+              data: candleData,
+              barPercentage: 0.15,
+              categoryPercentage: 0.5,
+              color: {
+                up: '#10b981',
+                down: '#ef4444',
+                unchanged: '#718096'
+              },
+              borderColor: {
+                up: '#059669',
+                down: '#dc2626',
+                unchanged: '#4a5568'
+              }
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            layout: {
+              padding: {
+                left: 15,
+                right: 15,
+                top: 20,
+                bottom: 10
+              }
+            },
+            interaction: {
+              intersect: false,
+              mode: 'index'
+            },
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                  padding: 15,
+                  font: {
+                    size: 13,
+                    weight: '600'
+                  }
+                }
+              },
+              tooltip: {
+                enabled: true,
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: 12,
+                titleFont: {
+                  size: 14
+                },
+                bodyFont: {
+                  size: 13
+                },
+                callbacks: {
+                  label: function(context) {
+                    const data = context.raw;
+                    if (!data || !data.o) return '';
+                    return [
+                      'Open: ₹' + data.o.toFixed(2),
+                      'High: ₹' + data.h.toFixed(2),
+                      'Low: ₹' + data.l.toFixed(2),
+                      'Close: ₹' + data.c.toFixed(2)
+                    ];
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                type: 'timeseries',
+                time: {
+                  unit: timeframe === '1' ? 'minute' : 'minute',
+                  displayFormats: {
+                    minute: 'HH:mm'
+                  },
+                  minUnit: 'minute'
+                },
+                offset: true,
+                grid: {
+                  display: false,
+                  offset: true
+                },
+                ticks: {
+                  source: 'auto',
+                  maxRotation: 0,
+                  autoSkip: true,
+                  autoSkipPadding: 50,
+                  padding: 10
+                }
+              },
+              y: {
+                display: true,
+                position: 'right',
+                offset: true,
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.05)',
+                  drawBorder: false
+                },
+                ticks: {
+                  padding: 10,
+                  callback: function(value) {
+                    return '₹' + value.toFixed(0);
+                  }
+                }
+              }
+            }
+          }
+        });
+      } else {
+        console.log(`Line chart - ${chartData.prices.length} data points`);
+
+        priceChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: chartData.labels,
+            datasets: [{
+              label: `Price (${timeframe}m intervals)`,
+              data: chartData.prices,
+              borderColor: '#667eea',
+              backgroundColor: 'rgba(102, 126, 234, 0.1)',
+              borderWidth: 3,
+              fill: true,
+              tension: 0.4,
+              pointRadius: 0,
+              pointHoverRadius: 6,
+              pointBackgroundColor: '#667eea',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            layout: {
+              padding: {
+                left: 15,
+                right: 15,
+                top: 20,
+                bottom: 10
+              }
+            },
+            interaction: {
+              intersect: false,
+              mode: 'index'
+            },
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                  padding: 15,
+                  font: {
+                    size: 13,
+                    weight: '600'
+                  }
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: 12,
+                titleFont: {
+                  size: 14
+                },
+                bodyFont: {
+                  size: 13
+                },
+                callbacks: {
+                  label: function(context) {
+                    return 'Price: ₹' + context.parsed.y.toFixed(2);
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                display: true,
+                offset: true,
+                grid: {
+                  display: false,
+                  offset: true
+                },
+                ticks: {
+                  maxRotation: 0,
+                  autoSkip: true,
+                  maxTicksLimit: 10,
+                  padding: 10
+                }
+              },
+              y: {
+                display: true,
+                position: 'right',
+                offset: true,
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.05)',
+                  drawBorder: false
+                },
+                ticks: {
+                  padding: 10,
+                  callback: function(value) {
+                    return '₹' + value.toFixed(0);
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Update chart with new data
+    function updateChart(tick) {
+      const tickTime = tick.timestamp ? new Date(tick.timestamp) : new Date();
+      const time = tickTime.toLocaleTimeString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Update line chart data
+      chartData.labels.push(time);
+      chartData.prices.push(tick.price);
+      chartData.volumes.push(tick.volume);
+
+      // Keep only last N points for line chart
+      if (chartData.labels.length > maxChartPoints) {
+        chartData.labels.shift();
+        chartData.prices.shift();
+        chartData.volumes.shift();
+      }
+
+      // Update candlestick data for all timeframes
+      updateCandleData(tick, tickTime);
+
+      // Update chart based on current type
+      if (priceChart) {
+        const timeframe = candleInterval.toString();
+        if (chartType === 'candlestick') {
+          priceChart.data.datasets[0].data = chartData.candles[timeframe] || [];
+        } else {
+          priceChart.data.labels = chartData.labels;
+          priceChart.data.datasets[0].data = chartData.prices;
+        }
+        priceChart.update('none'); // Update without animation for smooth real-time
+      }
+    }
+
+    // Update candle data for all timeframes
+    function updateCandleData(tick, tickTime) {
+      const timeframes = [1, 5, 15];
+
+      timeframes.forEach(tf => {
+        const tfStr = tf.toString();
+
+        // Initialize if needed
+        if (!chartData.candles[tfStr]) {
+          chartData.candles[tfStr] = [];
+        }
+
+        const minutes = tickTime.getMinutes();
+        const candleMinute = Math.floor(minutes / tf) * tf;
+        const candleTime = new Date(tickTime);
+        candleTime.setMinutes(candleMinute, 0, 0);
+
+        // Check if we need to start a new candle
+        if (!currentCandles[tfStr] || currentCandles[tfStr].x.getTime() !== candleTime.getTime()) {
+          // Save previous candle
+          if (currentCandles[tfStr]) {
+            chartData.candles[tfStr].push(currentCandles[tfStr]);
+
+            // Keep only last N candles (limit to prevent crowding)
+            if (chartData.candles[tfStr].length > maxCandlePoints) {
+              chartData.candles[tfStr].shift();
+            }
+          }
+
+          // Start new candle
+          currentCandles[tfStr] = {
+            x: candleTime,
+            o: tick.open || tick.price,
+            h: tick.high || tick.price,
+            l: tick.low || tick.price,
+            c: tick.price
+          };
+        } else {
+          // Update current candle
+          currentCandles[tfStr].h = Math.max(currentCandles[tfStr].h, tick.high || tick.price);
+          currentCandles[tfStr].l = Math.min(currentCandles[tfStr].l, tick.low || tick.price);
+          currentCandles[tfStr].c = tick.price;
+        }
+      });
+    }
+
+    // Switch to candlestick chart
+    function switchToCandle() {
+      chartType = 'candlestick';
+      initChart('candlestick');
+
+      // Update button states
+      btnChartCandle.classList.add('btn-start');
+      btnChartCandle.classList.remove('btn-pause');
+      btnChartLine.classList.remove('btn-start');
+      btnChartLine.classList.add('btn-pause');
+    }
+
+    // Switch to line chart
+    function switchToLine() {
+      chartType = 'line';
+      initChart('line');
+
+      // Update button states
+      btnChartLine.classList.add('btn-start');
+      btnChartLine.classList.remove('btn-pause');
+      btnChartCandle.classList.remove('btn-start');
+      btnChartCandle.classList.add('btn-pause');
+    }
+
+    // Load replay data
+    async function loadData() {
+      const response = await fetch('http://localhost:3001/api/replay/load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol: 'NIFTY50' })
+      });
+      const result = await response.json();
+      console.log('Data loaded:', result);
+
+      // Initialize chart after data is loaded
+      if (!priceChart) {
+        initChart();
+      }
+    }
+
+    // Controls
+    btnStart.addEventListener('click', () => {
+      socket.emit('replay-start', { speed: 1 });
+    });
+
+    btnPause.addEventListener('click', () => {
+      socket.emit('replay-pause');
+    });
+
+    btnStop.addEventListener('click', () => {
+      socket.emit('replay-stop');
+    });
+
+    // Chart type buttons
+    btnChartLine.addEventListener('click', () => {
+      switchToLine();
+    });
+
+    btnChartCandle.addEventListener('click', () => {
+      switchToCandle();
+    });
+
+    // Timeframe selector
+    timeframeSelect.addEventListener('change', (e) => {
+      candleInterval = parseInt(e.target.value);
+      console.log('Timeframe changed to:', candleInterval);
+
+      // Re-render chart with new timeframe data
+      initChart(chartType);
+    });
+
+    // Status updates
+    socket.on('replay-status', (status) => {
+      console.log('Status:', status);
+      isPlaying = status.isPlaying;
+      btnStart.disabled = isPlaying;
+      btnPause.disabled = !isPlaying;
+    });
+
+    // Data updates
+    socket.on('replay-update', (data) => {
+      console.log('Update:', data);
+
+      // Update progress
+      progressText.textContent = `${data.marketTime} | Tick ${data.currentIndex} / ${data.totalTicks} | ${data.progress}%`;
+      progressFill.style.width = `${data.progress}%`;
+
+      // Update chart with new tick
+      if (data.currentTick) {
+        updateChart(data.currentTick);
+      }
+
+      // Update price display
+      const tick = data.currentTick;
+      const changeClass = tick.changePercent >= 0 ? 'positive' : 'negative';
+
+      priceDataEl.innerHTML = `
+        <div>
+          <div class="price">₹${tick.price.toFixed(2)}</div>
+          <div class="change ${changeClass}">${tick.changePercent >= 0 ? '+' : ''}${tick.changePercent.toFixed(2)}%</div>
+        </div>
+        <div class="ohlc">
+          <div class="ohlc-item"><span>Open:</span><span>₹${tick.open.toFixed(2)}</span></div>
+          <div class="ohlc-item"><span>High:</span><span style="color: #10b981">₹${tick.high.toFixed(2)}</span></div>
+          <div class="ohlc-item"><span>Low:</span><span style="color: #ef4444">₹${tick.low.toFixed(2)}</span></div>
+          <div class="ohlc-item"><span>Volume:</span><span>${tick.volume.toLocaleString()}</span></div>
+        </div>
+      `;
+
+      // Update signal display
+      const signal = data.signal;
+      if (signal && signal.signal) {
+        const actionClass = signal.signal.action.includes('BUY') ? 'buy' :
+                           signal.signal.action.includes('SELL') ? 'sell' : 'hold';
+
+        signalDataEl.innerHTML = `
+          <div class="signal-action ${actionClass}">${signal.signal.action}</div>
+          <div style="margin: 15px 0;">
+            <strong>Confidence:</strong> ${signal.signal.confidence.toFixed(1)}%
+          </div>
+          ${signal.levels && signal.levels.target1 > 0 ? `
+            <div style="background: #f7fafc; padding: 15px; border-radius: 10px; font-size: 14px; text-align: left;">
+              <div style="margin-bottom: 5px;">📍 Entry: ₹${signal.levels.entry.toFixed(2)}</div>
+              <div style="margin-bottom: 5px;">🛑 Stop Loss: ₹${signal.levels.stopLoss.toFixed(2)}</div>
+              <div style="margin-bottom: 5px;">🎯 Target 1: ₹${signal.levels.target1.toFixed(2)}</div>
+              <div style="margin-bottom: 5px;">🎯 Target 2: ₹${signal.levels.target2.toFixed(2)}</div>
+              <div>🎯 Target 3: ₹${signal.levels.target3.toFixed(2)}</div>
+            </div>
+          ` : ''}
+          ${signal.reasoning && signal.reasoning.length > 0 ? `
+            <div style="margin-top: 15px; padding: 10px; background: #fef3c7; border-radius: 8px; font-size: 13px; text-align: left;">
+              <strong>💡 Analysis:</strong><br/>
+              ${signal.reasoning[0]}
+            </div>
+          ` : ''}
+        `;
+      }
+    });
+
+    // Signal History Functions
+    async function loadSignalHistory() {
+      try {
+        const response = await fetch('http://localhost:3001/api/replay/history?limit=100');
+        const result = await response.json();
+
+        if (!result.success || result.count === 0) {
+          historyContainer.innerHTML = '<p style="text-align: center; color: #718096; padding: 20px;">No signals recorded yet. Start the replay to generate signals.</p>';
+          return;
+        }
+
+        let html = '<div style="max-height: 500px; overflow-y: auto;">';
+
+        result.data.forEach((signal, idx) => {
+          const actionClass = signal.signal.action.includes('BUY') ? 'buy' :
+                             signal.signal.action.includes('SELL') ? 'sell' : 'hold';
+          const actionColor = actionClass === 'buy' ? '#10b981' :
+                             actionClass === 'sell' ? '#ef4444' : '#f59e0b';
+
+          const time = new Date(signal.marketTime).toLocaleTimeString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          html += `
+            <div style="background: #f7fafc; padding: 15px; margin-bottom: 10px; border-radius: 10px; border-left: 4px solid ${actionColor};">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div>
+                  <strong style="font-size: 18px; color: ${actionColor};">${signal.signal.action}</strong>
+                  <span style="margin-left: 10px; color: #718096;">${time}</span>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 16px; font-weight: 600;">₹${signal.price.toFixed(2)}</div>
+                  <div style="font-size: 14px; color: #718096;">${signal.signal.confidence.toFixed(1)}% confidence</div>
+                </div>
+              </div>
+
+              ${signal.levels && signal.levels.target1 > 0 ? `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 12px; margin-top: 10px;">
+                  <div>
+                    <div style="color: #718096;">Entry</div>
+                    <div style="font-weight: 600;">₹${signal.levels.entry.toFixed(2)}</div>
+                  </div>
+                  <div>
+                    <div style="color: #718096;">Stop Loss</div>
+                    <div style="font-weight: 600; color: #ef4444;">₹${signal.levels.stopLoss.toFixed(2)}</div>
+                  </div>
+                  <div>
+                    <div style="color: #718096;">Target 1</div>
+                    <div style="font-weight: 600; color: #10b981;">₹${signal.levels.target1.toFixed(2)}</div>
+                  </div>
+                </div>
+              ` : ''}
+
+              ${signal.reasoning && signal.reasoning.length > 0 ? `
+                <div style="margin-top: 10px; font-size: 13px; color: #4a5568; font-style: italic;">
+                  "${signal.reasoning[0]}"
+                </div>
+              ` : ''}
+            </div>
+          `;
+        });
+
+        html += '</div>';
+        historyContainer.innerHTML = html;
+      } catch (error) {
+        console.error('Failed to load history:', error);
+        historyContainer.innerHTML = '<p style="text-align: center; color: #ef4444; padding: 20px;">Failed to load signal history</p>';
+      }
+    }
+
+    btnToggleHistory.addEventListener('click', () => {
+      historyExpanded = !historyExpanded;
+      historyContainer.style.display = historyExpanded ? 'block' : 'none';
+      btnToggleHistory.textContent = historyExpanded ? '▲ Hide History' : '▼ Show History';
+
+      if (historyExpanded) {
+        loadSignalHistory();
+      }
+    });
+
+    btnRefreshHistory.addEventListener('click', () => {
+      if (historyExpanded) {
+        loadSignalHistory();
+      }
+    });
+
+    btnClearHistory.addEventListener('click', async () => {
+      if (confirm('Are you sure you want to clear all signal history?')) {
+        try {
+          await fetch('http://localhost:3001/api/replay/history', {
+            method: 'DELETE'
+          });
+          historyContainer.innerHTML = '<p style="text-align: center; color: #718096; padding: 20px;">Signal history cleared</p>';
+        } catch (error) {
+          console.error('Failed to clear history:', error);
+        }
+      }
+    });
+
+    // Auto-refresh history every 10 seconds when expanded
+    setInterval(() => {
+      if (historyExpanded && isPlaying) {
+        loadSignalHistory();
+      }
+    }, 10000);
+  </script>
+</body>
+</html>

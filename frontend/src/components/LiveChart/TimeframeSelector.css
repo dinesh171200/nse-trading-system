@@ -1,0 +1,30 @@
+.timeframe-selector {
+  display: flex;
+  gap: 0.5rem;
+  background: #f5f5f5;
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+.tf-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.tf-btn:hover {
+  background: #e3f2fd;
+  color: #2196f3;
+}
+
+.tf-btn.active {
+  background: #2196f3;
+  color: white;
+  box-shadow: 0 2px 6px rgba(33, 150, 243, 0.4);
+}

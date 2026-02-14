@@ -1,0 +1,45 @@
+{
+  "name": "nse-trading-backend",
+  "version": "1.0.0",
+  "description": "NSE Real-time Trading System - Backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "agents": "node agents/agent-manager.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "load-historical": "node scripts/load-historical.js",
+    "test-data-agent": "node scripts/test-data-agent.js",
+    "test-chart-agent": "node scripts/test-chart-agent.js",
+    "test-signal-agent": "node scripts/test-signal-agent.js"
+  },
+  "keywords": [
+    "nse",
+    "trading",
+    "technical-analysis",
+    "real-time",
+    "stock-market"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.6.0",
+    "socket.io": "^4.6.0",
+    "axios": "^1.6.0",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "winston": "^3.11.0",
+    "technicalindicators": "^3.1.0",
+    "date-fns": "^2.30.0",
+    "cheerio": "^1.0.0-rc.12"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
+  }
+}

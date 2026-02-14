@@ -1,0 +1,150 @@
+.live-chart {
+  background: linear-gradient(135deg, rgba(0, 191, 255, 0.1) 0%, rgba(138, 43, 226, 0.1) 100%);
+  border: 1px solid rgba(0, 191, 255, 0.3);
+  border-radius: 12px;
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 191, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.chart-controls {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.chart-type-selector {
+  display: flex;
+  gap: 8px;
+  background: #0f0f0f;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.chart-btn {
+  background: transparent;
+  border: none;
+  color: #888;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.chart-btn:hover {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+.chart-btn.active {
+  background: #00ff88;
+  color: #000;
+}
+
+.timeframe-selector {
+  display: flex;
+  gap: 6px;
+  background: #0f0f0f;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.tf-btn {
+  background: transparent;
+  border: none;
+  color: #888;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+  min-width: 45px;
+}
+
+.tf-btn:hover {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+.tf-btn.active {
+  background: #00ff88;
+  color: #000;
+}
+
+.chart-info {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: #aaa;
+  font-size: 13px;
+}
+
+.chart-symbol {
+  color: #00ff88;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.chart-timeframe {
+  color: #fff;
+  font-weight: 600;
+}
+
+.chart-points {
+  color: #666;
+}
+
+.chart-container {
+  flex: 1;
+  position: relative;
+  min-height: 350px;
+  max-height: 450px;
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .live-chart {
+    padding: 15px;
+  }
+
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chart-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .chart-info {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .chart-container {
+    min-height: 280px;
+    max-height: 380px;
+  }
+}

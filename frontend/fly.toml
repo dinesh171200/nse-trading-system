@@ -1,0 +1,45 @@
+# Fly.io configuration for NSE Trading System Frontend
+
+app = "nse-trading-frontend"
+primary_region = "sin"  # Singapore (closest to India)
+
+[build]
+  dockerfile = "Dockerfile.prod"
+  [build.args]
+    REACT_APP_API_URL = "https://nse-trading-backend.fly.dev"
+    REACT_APP_WS_URL = "wss://nse-trading-backend.fly.dev"
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "10s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/health"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 80
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "2s"
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1

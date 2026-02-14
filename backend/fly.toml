@@ -1,0 +1,62 @@
+# Fly.io configuration for NSE Trading System Backend
+
+app = "nse-trading-backend"
+primary_region = "sin"  # Singapore (closest to India for NSE data)
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  NODE_ENV = "production"
+  WS_PORT = "5001"
+  NSE_BASE_URL = "https://www.nseindia.com"
+  NSE_TIMEOUT = "10000"
+  NSE_RETRY_COUNT = "3"
+  MARKET_OPEN_HOUR = "9"
+  MARKET_OPEN_MINUTE = "15"
+  MARKET_CLOSE_HOUR = "15"
+  MARKET_CLOSE_MINUTE = "30"
+  DATA_AGENT_INTERVAL = "60000"
+  CHART_AGENT_ENABLED = "true"
+  SIGNAL_AGENT_ENABLED = "true"
+  MIN_CONFIDENCE = "50"
+  SIGNAL_EXPIRY_HOURS = "4"
+  HISTORICAL_DAYS = "5"
+  LOG_LEVEL = "info"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "10s"
+    grace_period = "30s"
+    method = "GET"
+    path = "/api/health"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 8080
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "2s"
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
