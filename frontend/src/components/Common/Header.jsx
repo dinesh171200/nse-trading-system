@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Header.css';
 
 const Header = ({ marketStatus, wsConnected }) => {
+  const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Update time every second
@@ -45,7 +47,19 @@ const Header = ({ marketStatus, wsConnected }) => {
           AI Trading Signals
           <span className="made-by">Made by Dinesh</span>
         </h1>
-        <p className="header-subtitle">Powered by 16+ Technical Indicators • Nifty 50 & Bank Nifty</p>
+        <p className="header-subtitle">Powered by 72+ Technical Indicators • Nifty 50 & Bank Nifty</p>
+      </div>
+
+      <div className="header-nav">
+        <button className="nav-btn" onClick={() => navigate('/')} title="Home">
+          🏠 Home
+        </button>
+        <button className="nav-btn" onClick={() => navigate('/detailed')} title="Detailed Chart">
+          📊 Detailed
+        </button>
+        <button className="nav-btn" onClick={() => navigate('/history')} title="Signal History">
+          📜 History
+        </button>
       </div>
 
       <div className="header-right">
