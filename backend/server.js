@@ -124,11 +124,10 @@ function startBackgroundAgents() {
     console.log('\n🤖 Starting background agents...');
 
     // Start Data Agent (fetches NSE data every minute)
-    const dataAgent = require('./agents/data-agent');
-    if (dataAgent && dataAgent.start) {
-      dataAgent.start();
-      console.log('✓ Data Agent started');
-    }
+    const DataAgent = require('./agents/data-agent');
+    const dataAgent = new DataAgent();
+    dataAgent.start();
+    console.log('✓ Data Agent started');
 
     // Start Chart Generator (generates OHLC charts every minute)
     require('./auto-chart-generator');
