@@ -36,6 +36,35 @@ const SignalHistoryPage = () => {
     }
   }, []);
 
+  const clearAllHistory = async () => {
+    if (!window.confirm('⚠️ Are you sure you want to delete ALL signal history? This action cannot be undone!')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/signals/clear-all?confirm=true`,
+        { method: 'DELETE' }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to clear signal history');
+      }
+
+      const data = await response.json();
+      alert(`✅ Successfully deleted ${data.deleted.total} signals`);
+      setHistory([]);
+      setError(null);
+    } catch (err) {
+      console.error('Error clearing signal history:', err);
+      alert(`❌ Error: ${err.message}`);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
@@ -116,9 +145,14 @@ const SignalHistoryPage = () => {
           ← Back to Dashboard
         </button>
         <h1 className="history-title">📜 Signal History</h1>
-        <button onClick={fetchHistory} className="refresh-btn" title="Refresh">
-          🔄 Refresh
-        </button>
+        <div className="header-actions">
+          <button onClick={fetchHistory} className="refresh-btn" title="Refresh">
+            🔄 Refresh
+          </button>
+          <button onClick={clearAllHistory} className="clear-all-btn" title="Clear All History">
+            🗑️ Clear All
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

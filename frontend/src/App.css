@@ -330,23 +330,39 @@ body {
   }
 
   .main-layout {
-    grid-template-columns: 1fr;
-    gap: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px; /* Clear spacing between sections */
   }
 
   .left-panel {
-    order: 1; /* Signal panel on top */
+    position: static; /* Remove sticky positioning */
+    order: 1;
+    margin-bottom: 20px;
   }
 
   .right-panel {
-    order: 2; /* Chart below */
+    order: 2;
     min-height: 350px;
-    max-height: 450px;
+    max-height: none; /* Remove max-height for flexible scrolling */
   }
 
   .history-section {
     min-height: 300px;
-    max-height: 400px;
+    max-height: none;
+  }
+
+  /* Disable animations on mobile */
+  .timeframe-badge {
+    animation: none;
+  }
+
+  .indicator-tag:hover {
+    transform: none;
+  }
+
+  .view-history-btn:hover {
+    transform: none;
   }
 }
 
@@ -361,12 +377,19 @@ body {
   }
 
   .main-layout {
-    gap: 10px;
-    min-height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 50px; /* More spacing for mobile */
+  }
+
+  .left-panel {
+    position: static;
+    margin-bottom: 30px;
   }
 
   .current-signal-section {
     padding: 15px;
+    margin-bottom: 0;
   }
 
   .section-title {
@@ -377,16 +400,18 @@ body {
   .timeframe-badge {
     font-size: 11px;
     padding: 3px 8px;
+    animation: none; /* Disable animation */
   }
 
   .right-panel {
     min-height: 300px;
-    max-height: 400px;
+    max-height: none; /* Allow flexible height */
+    margin-top: 20px;
   }
 
   .history-section {
     min-height: 250px;
-    max-height: 350px;
+    max-height: none;
   }
 
   .indicators-info {
@@ -400,6 +425,10 @@ body {
   .indicator-tag {
     font-size: 11px;
     padding: 5px 10px;
+  }
+
+  .indicator-tag:hover {
+    transform: none; /* Disable hover animation */
   }
 
   .footer-note {
@@ -418,7 +447,15 @@ body {
 /* Extra Small Mobile (<480px) */
 @media (max-width: 480px) {
   .main-content {
-    padding: 8px;
+    padding: 10px;
+  }
+
+  .main-layout {
+    gap: 60px; /* Even more spacing for small screens */
+  }
+
+  .left-panel {
+    margin-bottom: 40px;
   }
 
   .current-signal-section,
@@ -433,6 +470,18 @@ body {
 
   .right-panel {
     min-height: 280px;
-    max-height: 380px;
+    max-height: none; /* Allow flexible scrolling */
+    margin-top: 30px;
+  }
+
+  /* Disable all hover effects and animations */
+  * {
+    animation: none !important;
+  }
+
+  .view-history-btn:hover,
+  .retry-btn:hover,
+  .indicator-tag:hover {
+    transform: none !important;
   }
 }

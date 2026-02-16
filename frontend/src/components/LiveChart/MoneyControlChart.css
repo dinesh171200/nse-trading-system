@@ -1,0 +1,418 @@
+.moneycontrol-chart {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Price Display */
+.mc-price-display {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 204, 255, 0.1));
+  border: 2px solid rgba(0, 255, 136, 0.3);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.mc-price-main {
+  margin-bottom: 16px;
+}
+
+.mc-symbol-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: #00ff88;
+  margin: 0 0 12px 0;
+  text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+}
+
+.mc-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.mc-current-price {
+  font-size: 48px;
+  font-weight: 800;
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+}
+
+.mc-price-change {
+  font-size: 24px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-family: 'Courier New', monospace;
+}
+
+.mc-price-change.positive {
+  color: #00ff88;
+  background: rgba(0, 255, 136, 0.15);
+  border: 2px solid rgba(0, 255, 136, 0.5);
+}
+
+.mc-price-change.negative {
+  color: #ff4466;
+  background: rgba(255, 68, 102, 0.15);
+  border: 2px solid rgba(255, 68, 102, 0.5);
+}
+
+.mc-price-details {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.mc-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mc-detail-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.mc-detail-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  font-family: 'Courier New', monospace;
+}
+
+.mc-detail-value.mc-high {
+  color: #00ff88;
+}
+
+.mc-detail-value.mc-low {
+  color: #ff4466;
+}
+
+/* Header */
+.mc-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.mc-symbol-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mc-tab {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.mc-tab:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.mc-tab.active {
+  background: linear-gradient(135deg, #00ff88, #00ccff);
+  border-color: #00ff88;
+  color: #1a1d29;
+  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+}
+
+.mc-update-time {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+
+/* Chart Wrapper */
+.mc-chart-wrapper {
+  position: relative;
+  flex: 1;
+  min-height: 400px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mc-chart-container {
+  width: 100%;
+  height: 100%;
+  min-height: 600px; /* Ensure chart is tall enough */
+  background: #1e222d; /* Match chart background */
+  border-radius: 8px;
+}
+
+/* Fullscreen Button */
+.mc-fullscreen-btn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid rgba(0, 255, 136, 0.5);
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.mc-fullscreen-btn svg {
+  color: #00ff88;
+  filter: drop-shadow(0 0 8px rgba(0, 255, 136, 0.5));
+}
+
+.mc-fullscreen-btn:hover {
+  background: rgba(0, 255, 136, 0.2);
+  border-color: #00ff88;
+  transform: scale(1.1);
+  box-shadow: 0 4px 20px rgba(0, 255, 136, 0.4);
+}
+
+.mc-fullscreen-btn:active {
+  transform: scale(0.95);
+}
+
+/* Fullscreen mode styles */
+.moneycontrol-chart:fullscreen,
+.moneycontrol-chart:-webkit-full-screen,
+.moneycontrol-chart:-moz-full-screen,
+.moneycontrol-chart:-ms-fullscreen {
+  background: #131722;
+  padding: 20px;
+}
+
+.moneycontrol-chart:fullscreen .mc-chart-wrapper,
+.moneycontrol-chart:-webkit-full-screen .mc-chart-wrapper {
+  min-height: calc(100vh - 200px);
+  max-height: calc(100vh - 200px);
+}
+
+.moneycontrol-chart:fullscreen .mc-chart-container,
+.moneycontrol-chart:-webkit-full-screen .mc-chart-container {
+  min-height: calc(100vh - 300px);
+  height: calc(100vh - 300px);
+}
+
+/* Loading */
+.mc-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  z-index: 10;
+}
+
+.mc-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0, 255, 136, 0.2);
+  border-top-color: #00ff88;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.mc-loading p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error */
+.mc-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 10;
+}
+
+.mc-error p {
+  color: #ff4466;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.mc-error button {
+  background: linear-gradient(135deg, #00ff88, #00ccff);
+  border: none;
+  color: #1a1d29;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mc-error button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mc-price-display {
+    padding: 16px;
+    margin-bottom: 30px; /* Increased spacing to prevent overlap with signal box */
+  }
+
+  .mc-symbol-name {
+    font-size: 20px;
+  }
+
+  .mc-current-price {
+    font-size: 36px;
+  }
+
+  .mc-price-change {
+    font-size: 18px;
+    padding: 6px 12px;
+  }
+
+  .mc-price-details {
+    gap: 16px;
+  }
+
+  .mc-detail-value {
+    font-size: 16px;
+  }
+
+  .mc-chart-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mc-symbol-tabs {
+    justify-content: center;
+  }
+
+  .mc-tab {
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+  }
+
+  .mc-update-time {
+    text-align: center;
+  }
+
+  .mc-chart-wrapper {
+    min-height: 300px;
+  }
+
+  .mc-fullscreen-btn {
+    top: 16px;
+    right: 16px;
+    padding: 8px;
+  }
+
+  .mc-fullscreen-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Fullscreen on mobile - portrait mode */
+  .moneycontrol-chart:fullscreen,
+  .moneycontrol-chart:-webkit-full-screen {
+    padding: 10px;
+  }
+
+  .moneycontrol-chart:fullscreen .mc-chart-wrapper,
+  .moneycontrol-chart:-webkit-full-screen .mc-chart-wrapper {
+    min-height: calc(100vh - 150px);
+    max-height: calc(100vh - 150px);
+  }
+
+  .moneycontrol-chart:fullscreen .mc-chart-container,
+  .moneycontrol-chart:-webkit-full-screen .mc-chart-container {
+    min-height: calc(100vh - 200px);
+    height: calc(100vh - 200px);
+  }
+}
+
+/* Landscape mode for mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .moneycontrol-chart:fullscreen .mc-price-display,
+  .moneycontrol-chart:-webkit-full-screen .mc-price-display {
+    display: none; /* Hide price display in landscape fullscreen for more chart space */
+  }
+
+  .moneycontrol-chart:fullscreen .mc-chart-header,
+  .moneycontrol-chart:-webkit-full-screen .mc-chart-header {
+    display: none; /* Hide header in landscape fullscreen */
+  }
+
+  .moneycontrol-chart:fullscreen .mc-chart-wrapper,
+  .moneycontrol-chart:-webkit-full-screen .mc-chart-wrapper {
+    min-height: calc(100vh - 40px);
+    max-height: calc(100vh - 40px);
+  }
+
+  .moneycontrol-chart:fullscreen .mc-chart-container,
+  .moneycontrol-chart:-webkit-full-screen .mc-chart-container {
+    min-height: calc(100vh - 60px);
+    height: calc(100vh - 60px);
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  .mc-price-display {
+    padding: 14px;
+    margin-bottom: 40px; /* Even more spacing for smaller screens */
+  }
+
+  .mc-symbol-name {
+    font-size: 18px;
+  }
+
+  .mc-current-price {
+    font-size: 32px;
+  }
+
+  .mc-price-change {
+    font-size: 16px;
+    padding: 5px 10px;
+  }
+
+  .mc-detail-value {
+    font-size: 14px;
+  }
+}

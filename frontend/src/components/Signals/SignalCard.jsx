@@ -84,6 +84,52 @@ const SignalCard = ({ signal }) => {
         )}
       </div>
 
+      {/* Performance Display - Show if target/SL was hit */}
+      {signal.performance && signal.performance.targetHit && signal.performance.targetHit !== 'NONE' && (
+        <div className={`signal-performance ${signal.performance.outcome === 'WIN' ? 'win' : 'loss'}`}>
+          <div className="performance-header">
+            <span className="performance-icon">
+              {signal.performance.outcome === 'WIN' ? '✅' : '❌'}
+            </span>
+            <span className="performance-status">
+              {signal.performance.outcome === 'WIN' ? 'Target Hit!' : 'Stop Loss Hit'}
+            </span>
+          </div>
+          <div className="performance-details">
+            <div className="performance-item">
+              <span className="performance-label">Hit Level:</span>
+              <span className="performance-value">{signal.performance.targetHit.replace(/(\d)/, ' $1')}</span>
+            </div>
+            <div className="performance-item">
+              <span className="performance-label">Exit Price:</span>
+              <span className="performance-value">₹{signal.performance.exitPrice?.toFixed(2) || 'N/A'}</span>
+            </div>
+            <div className="performance-item">
+              <span className="performance-label">P/L:</span>
+              <span className={`performance-value ${signal.performance.profitLoss >= 0 ? 'profit' : 'loss'}`}>
+                {signal.performance.profitLoss >= 0 ? '+' : ''}₹{signal.performance.profitLoss?.toFixed(2) || 'N/A'}
+                {signal.performance.profitLossPercent && (
+                  <> ({signal.performance.profitLossPercent >= 0 ? '+' : ''}{signal.performance.profitLossPercent.toFixed(2)}%)</>
+                )}
+              </span>
+            </div>
+            {signal.performance.exitTime && (
+              <div className="performance-item">
+                <span className="performance-label">Exit Time:</span>
+                <span className="performance-value">
+                  {new Date(signal.performance.exitTime).toLocaleString('en-IN', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="signal-scores">
         <div className="score-item">
           <span className="score-label">Trend</span>
