@@ -111,6 +111,45 @@ server.listen(PORT, () => {
   console.log(`✓ Server running on port ${PORT}`);
   console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`✓ WebSocket enabled for replay updates`);
+
+  // Start background agents automatically
+  startBackgroundAgents();
 });
+
+/**
+ * Start background data collection and signal generation agents
+ */
+function startBackgroundAgents() {
+  try {
+    console.log('\n🤖 Starting background agents...');
+
+    // Start Data Agent (fetches NSE data every minute)
+    const dataAgent = require('./agents/data-agent');
+    if (dataAgent && dataAgent.start) {
+      dataAgent.start();
+      console.log('✓ Data Agent started');
+    }
+
+    // Start Chart Generator (generates OHLC charts every minute)
+    require('./auto-chart-generator');
+    console.log('✓ Chart Generator started');
+
+    // Start Signal Generator (generates trading signals every minute)
+    require('./auto-signal-generator');
+    console.log('✓ Signal Generator started');
+
+    // Start Signal Tracker (monitors active signals)
+    const signalTracker = require('./services/signal-tracker');
+    if (signalTracker && signalTracker.startTracking) {
+      signalTracker.startTracking();
+      console.log('✓ Signal Tracker started');
+    }
+
+    console.log('✅ All background agents are running\n');
+  } catch (error) {
+    console.error('⚠️  Error starting background agents:', error.message);
+    console.log('💡 Agents will need to be started manually if required');
+  }
+}
 
 module.exports = app;
