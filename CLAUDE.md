@@ -2,239 +2,597 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Status
-
-This repository currently contains **project specification and documentation only**. The actual codebase has not been implemented yet. The complete system architecture, technical requirements, and implementation plan are documented in `nse_realtime_system.md`.
-
 ## Project Overview
 
-**NSE Real-time Trading System** - A real-time trading system for analyzing NSE indices (Nifty 50 and Bank Nifty) using 100+ technical indicators to generate automated BUY/SELL signals.
+**NSE Real-time Trading System** - A full-stack real-time trading signals platform that analyzes Indian stock market data (Nifty 50, Bank Nifty) and US indices (Dow Jones) using 50+ technical indicators to generate automated trading signals.
 
 ### Target Indices
-- **Nifty 50**: ^NSEI
-- **Bank Nifty**: ^NSEBANK
+- **Nifty 50**: MoneyControl symbol `in;NSX`
+- **Bank Nifty**: MoneyControl symbol `in;nbx`
+- **Dow Jones Future**: Investing.com ID `8873`
 
-## Planned Architecture
+## Architecture
 
 ### Tech Stack
-- **Backend**: Node.js, Express.js, MongoDB, Socket.io
-- **Frontend**: React.js, Recharts/Lightweight Charts
-- **Real-time**: WebSocket for live updates
-- **Task Scheduling**: node-cron for 1-minute data fetching
+- **Backend**: Node.js, Express.js, MongoDB, Socket.IO
+- **Frontend**: React.js with lightweight-charts library
+- **Real-time**: WebSocket for live updates (Socket.IO)
+- **APIs**: MoneyControl (Indian markets), Investing.com (US markets via backend proxy)
 
-### Three-Agent System
+### Background Agents (Auto-start on Server Launch)
 1. **Data Agent** (`backend/agents/data-agent.js`): Fetches NSE data every 1 minute
-2. **Chart Agent** (`backend/agents/chart-agent.js`): Converts tick data into OHLC charts for timeframes (1m, 5m, 15m, 30m, 1h, 1d)
-3. **Signal Agent** (`backend/agents/signal-agent.js`): Analyzes 100+ technical indicators and generates BUY/SELL signals with confidence levels
+2. **Chart Generator** (`backend/auto-chart-generator.js`): Generates OHLC charts every minute
+3. **Signal Generator** (`backend/auto-signal-generator.js`): Analyzes indicators and generates trading signals
+4. **Signal Tracker** (`backend/services/signal-tracker.js`): Monitors active signals and tracks P&L
 
-### Database Collections (MongoDB)
-- **TickData**: Raw 1-minute price data from NSE
-- **ChartData**: OHLC candles for multiple timeframes
-- **TradingSignals**: Generated signals with indicators, confidence, entry/exit levels
-- **SystemLogs**: System activity and error logs
+### Key Services
+- **Replay Manager** (`backend/services/replay-manager.js`): Event-driven replay system with listeners pattern
+- **Database** (`backend/config/database.js`): MongoDB connection management
+- **Backend Proxy** (`backend/routes/investing.js`): Bypasses CORS/Cloudflare for Investing.com API
 
-### Indicator Categories (115+ total)
-- Trend (30 weight%): EMA, SMA, MACD, ADX, DMI, Parabolic SAR, Supertrend, Ichimoku
-- Momentum (25 weight%): RSI, Stochastic, CCI, Williams %R, ROC, TSI, Ultimate Oscillator
-- Volatility (10 weight%): Bollinger Bands, ATR, Keltner Channel, Donchian Channel
-- Volume (15 weight%): OBV, MFI, VWAP, Accumulation/Distribution, Chaikin Money Flow
-- Support/Resistance (10 weight%): Pivot Points (5 types), Fibonacci levels, S/R detection
-- Patterns (10 weight%): 20+ candlestick patterns, chart patterns, harmonic patterns
-- Options (5 weight% when available): PCR, Max Pain, Implied Volatility
-
-## Project Structure (When Implemented)
+## Project Structure
 
 ```
 nse-realtime-trading-system/
 ├── backend/
-│   ├── server.js                    # Main Express server
-│   ├── config/                      # Database and NSE configuration
-│   ├── models/                      # Mongoose schemas (TickData, ChartData, TradingSignal, SystemLog)
-│   ├── agents/                      # Data, Chart, and Signal agents
-│   ├── services/                    # NSE fetcher, chart generator, signal combiner
-│   ├── indicators/                  # 100+ technical indicators organized by category
-│   │   ├── trend/                   # EMA, SMA, MACD, ADX, DMI, etc.
-│   │   ├── momentum/                # RSI, Stochastic, CCI, Williams %R, etc.
-│   │   ├── volatility/              # Bollinger Bands, ATR, Keltner, etc.
-│   │   ├── volume/                  # OBV, MFI, VWAP, etc.
-│   │   ├── support-resistance/      # Pivot points, Fibonacci, S/R detector
-│   │   ├── patterns/                # Candlestick and chart patterns
-│   │   └── options/                 # PCR, Max Pain, IV analysis
-│   ├── utils/                       # Timeframe converter, OHLC generator, logger
-│   ├── routes/                      # REST API endpoints
-│   ├── websocket/                   # WebSocket server for real-time updates
-│   ├── scripts/                     # Test scripts for agents and indicators
-│   └── tests/                       # Unit tests
-├── frontend/
-│   └── src/
-│       ├── components/
-│       │   ├── LiveChart/           # Real-time line charts with timeframe selector
-│       │   ├── Signals/             # Live signal panel with confidence display
-│       │   ├── Historical/          # Past signals and performance metrics
-│       │   └── Common/              # Header, index selector, status indicator
-│       ├── services/                # API and WebSocket clients
-│       └── hooks/                   # React hooks for WebSocket and live data
-└── docs/                            # Additional documentation
+│   ├── server.js                           # Main Express server with Socket.IO
+│   ├── config/database.js                  # MongoDB connection
+│   ├── models/                             # Mongoose schemas
+│   ├── agents/data-agent.js                # Fetches NSE data every minute
+│   ├── services/
+│   │   ├── replay-manager.js               # Manages replay state, event-driven
+│   │   ├── signal-tracker.js               # Monitors active signals
+│   │   └── signal-combiner.js              # Combines 50+ indicators into signals
+│   ├── indicators/                         # 50+ technical indicators (46 files)
+│   │   ├── index.js                        # Main exports
+│   │   ├── momentum/                       # RSI, Stochastic, CCI, Williams %R, etc.
+│   │   ├── trend/                          # EMA, MACD, ADX, Supertrend, Ichimoku, etc.
+│   │   ├── volatility/                     # Bollinger Bands, ATR, Keltner, etc.
+│   │   ├── volume/                         # OBV, MFI, VWAP, A/D, CMF, etc.
+│   │   ├── support-resistance/             # Pivot Points, Fibonacci, S/R levels
+│   │   └── options/                        # PCR, Open Interest analysis
+│   ├── routes/
+│   │   ├── test.js                         # Test endpoints
+│   │   ├── chart.js                        # Chart data endpoints
+│   │   ├── demo.js                         # Demo data
+│   │   ├── replay.js                       # Replay control
+│   │   ├── signals.js                      # Signal generation
+│   │   ├── signals-test.js                 # Signal testing
+│   │   ├── history.js                      # Historical data
+│   │   └── investing.js                    # Backend proxy for Investing.com
+│   ├── auto-chart-generator.js             # Auto-generates OHLC charts
+│   ├── auto-signal-generator.js            # Auto-generates trading signals
+│   └── INDICATORS_LIST.md                  # Complete indicator documentation
+├── frontend/src/
+│   ├── App.js                              # Main app with routes
+│   ├── components/
+│   │   ├── LiveChart/
+│   │   │   ├── MoneyControlChart.jsx       # Reusable chart component
+│   │   │   └── MoneyControlChart.css       # Chart styling
+│   │   ├── Signals/SignalCard.jsx          # Signal display card
+│   │   └── Common/Header.jsx               # Header with navigation
+│   ├── pages/
+│   │   ├── DetailedChart.jsx               # Full-page detailed chart view
+│   │   ├── SignalHistoryPage.jsx           # Signal history
+│   │   └── SignalDetail.jsx                # Individual signal detail
+│   └── hooks/
+│       ├── useWebSocket.js                 # WebSocket connection
+│       ├── useMarketStatus.js              # Market open/close status
+│       ├── useSignals.js                   # Fetch and refresh signals
+│       └── useLiveData.js                  # Real-time market data
 ```
 
-## Key Development Commands (When Implemented)
+## Development Commands
 
 ### Setup
 ```bash
 # Backend setup
 cd backend
-npm install express mongoose socket.io axios node-cron dotenv cors winston technicalindicators date-fns
+npm install
 
 # Frontend setup
 cd frontend
-npm install react react-dom socket.io-client axios recharts date-fns lightweight-charts
+npm install
 ```
 
 ### Running the System
 ```bash
-# Terminal 1 - Start backend server
+# Terminal 1 - Start backend server (port 3001 by default)
 cd backend
-npm run dev                          # or: node server.js
+npm start                            # or: node server.js
 
-# Terminal 2 - Start frontend
+# Terminal 2 - Start frontend (port 3000)
 cd frontend
 npm start
-
-# Terminal 3 - Start agents
-cd backend
-node agents/agent-manager.js
 ```
 
-### Testing Individual Components
+**Important**: Backend automatically starts all background agents on launch (Data Agent, Chart Generator, Signal Generator, Signal Tracker). No separate agent process needed.
+
+### Building for Production
 ```bash
-# Test data fetching from NSE
-node scripts/test-data-agent.js
-
-# Test chart generation
-node scripts/test-chart-agent.js --symbol=NIFTY50 --timeframe=5m
-
-# Test signal generation
-node scripts/test-signal-agent.js --symbol=BANKNIFTY
-
-# Test specific indicator
-node scripts/test-indicator.js --indicator=rsi
-node scripts/test-indicator.js --indicator=macd
-node scripts/test-indicator.js --indicator=bollinger
-
-# Run all tests
-npm test
-
-# Run specific test suite
-npm test -- indicators
-npm test -- agents
-npm test -- services
-```
-
-### Database Operations
-```bash
-# Load 5 days historical data for testing
-node scripts/load-historical.js
-
-# Reset database
-node scripts/reset-database.js
-
-# Cleanup old data
-node scripts/cleanup-database.js --days=7
+# Frontend production build
+cd frontend
+npm run build
 ```
 
 ## Environment Configuration
 
 ### Backend (.env)
 ```env
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/nse_trading
-NSE_BASE_URL=https://www.nseindia.com
-MARKET_OPEN_HOUR=9
-MARKET_OPEN_MINUTE=15
-MARKET_CLOSE_HOUR=15
-MARKET_CLOSE_MINUTE=30
-DATA_AGENT_INTERVAL=60000        # 1 minute
-MIN_CONFIDENCE=50                 # Only show signals >50% confidence
-SIGNAL_EXPIRY_HOURS=4
-WS_PORT=5001
+PORT=3001
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/nse_trading
+NODE_ENV=development
 ```
 
 ### Frontend (.env)
 ```env
-REACT_APP_API_URL=http://localhost:5000
-REACT_APP_WS_URL=ws://localhost:5001
+REACT_APP_API_URL=http://localhost:3001
+REACT_APP_WS_URL=ws://localhost:3001
 ```
+
+**Critical**: WebSocket URL must match the HTTP server port (3001). Backend runs WebSocket and HTTP on the same port, not separate ports.
 
 ## Key Technical Details
 
-### Signal Generation Logic
-- Each indicator produces a score from -100 (Strong Sell) to +100 (Strong Buy)
-- Scores are weighted by category (Trend: 30%, Momentum: 25%, Volume: 15%, etc.)
-- Final confidence score: 0-100% based on weighted combination
-- Only signals with confidence >50% are stored and displayed
-- Signals include: action (BUY/SELL), entry price, stop loss, 3 targets, risk/reward ratio
+### Chart System Architecture
 
-### Market Hours (IST)
-- Trading: 9:15 AM - 3:30 PM
-- Data Agent runs every 1 minute during market hours
-- System auto-detects market holidays and weekends
+**MoneyControlChart Component** (`frontend/src/components/LiveChart/MoneyControlChart.jsx`):
+- Reusable chart component for all symbols (Nifty 50, Bank Nifty, Dow Jones)
+- Each symbol gets its own independent chart instance (destroy/recreate on symbol change)
+- Auto-refreshes every 60 seconds
+- Supports dual chart types: candlestick (Indian indices) vs line (US indices)
+- Overlays technical indicators (EMA 9/21/50, Volume) directly on charts using lightweight-charts series
 
-### API Endpoints (When Implemented)
-- `GET /api/charts/:symbol/:timeframe` - Get chart data
-- `GET /api/signals/live` - Get active signals (confidence >50%)
-- `GET /api/signals/historical` - Get past signals with performance
-- `GET /api/signals/statistics` - Get win rate and performance metrics
-- `GET /api/test/data-agent` - Manually test data fetching
-- `GET /api/test/indicator/:name` - Test specific indicator
+**Data Flow**:
+1. Component mounts → fetch initial data from API
+2. Create lightweight-charts instance with specific configuration
+3. Add multiple series to chart:
+   - Main series: Candlestick or line chart
+   - Indicator series: EMA lines (9/21/50 periods)
+   - Volume series: Histogram with separate price scale
+4. Transform API data to chart format (OHLC for candlestick, time/value for line)
+5. Calculate EMA values client-side using exponential smoothing algorithm
+6. Apply data to all series (main chart, EMAs, volume)
+7. Set interval for 60-second auto-refresh
+8. On symbol change → destroy old chart, create new instance (ensures zoom/pan independence)
 
-### WebSocket Events
-- `tick-update` - Real-time price updates (every 1 min)
-- `chart-update` - Chart data updated
-- `signal-generated` - New trading signal
-- `signal-updated` - Existing signal hit target/SL
+**Critical Pattern**: Always wrap `chart.remove()` in try-catch blocks due to React Strict Mode remounting components. Set refs to null after disposal to prevent stale references.
 
-## Implementation Guidelines
+### API Integration
 
-### When Building the Indicators
-1. Each indicator should be in its own file under the appropriate category folder
-2. Export a function that takes chart data and returns a signal score (-100 to 100)
-3. Include metadata: indicator name, category, weight, description
-4. Handle edge cases (insufficient data, invalid values)
-5. Add unit tests for each indicator
+**MoneyControl API** (Indian Indices):
+- Nifty 50: `symbol=in;NSX`
+- Bank Nifty: `symbol=in;nbx`
+- URL: `https://priceapi.moneycontrol.com/techCharts/indianMarket/index/history`
+- Parameters: `resolution=5` (5-minute candles), `from` and `to` (Unix timestamps), `countback=1440`
+- Data range: 5 days from current datetime
+- Response format: `{s: 'ok', t: [timestamps], o: [open], h: [high], l: [low], c: [close]}`
 
-### When Building the Agents
-1. **Data Agent**: Use proper headers and user-agent when fetching from NSE to avoid blocking
-2. **Chart Agent**: Implement efficient OHLC aggregation from tick data
-3. **Signal Agent**: Run indicator calculations in parallel for performance
+**Investing.com API** (US Indices) via Backend Proxy:
+- Dow Jones ID: `8873`
+- Frontend calls: `${API_URL}/api/investing/dow-jones`
+- Backend proxies to: `https://api.investing.com/api/financialdata/8873/historical/chart/`
+- Parameters: `interval=PT5M`, `pointscount=160`
+- Response format: `[[timestamp_ms, open, high, low, close, volume], ...]`
+- Data transformation: `time: Math.floor(item[0] / 1000)`, `value: item[4]` (close price)
 
-### Database Indexes (Critical for Performance)
-- TickData: `{ symbol: 1, timestamp: -1 }`
-- ChartData: `{ symbol: 1, timeframe: 1, timestamp: -1 }`
-- TradingSignals: `{ symbol: 1, timestamp: -1 }`, `{ "signal.confidence": -1, timestamp: -1 }`
+**Why Backend Proxy?** Investing.com API is protected by Cloudflare. Direct browser requests fail with "Just a moment..." page. Backend proxy adds proper headers (User-Agent, Referer, Origin) to bypass protection.
 
-## Important Notes
+### WebSocket Communication
 
-- This is a **specification document only** - no code has been implemented yet
-- NSE data fetching may require specific headers and rate limiting
-- Market data is only available during trading hours (9:15 AM - 3:30 PM IST)
-- The system requires substantial computational resources when calculating 100+ indicators
-- Consider starting with a subset of indicators (20-30) before implementing all 115+
-- WebSocket connections need proper error handling and reconnection logic
-- Signal performance tracking requires comparing entry price with subsequent price movements
+**Server** (`backend/server.js`):
+- Socket.IO server on port 3001 (same as HTTP server)
+- Emits `replay-status`, `replay-update` events
+- Listens for `replay-start`, `replay-pause`, `replay-resume`, `replay-stop` commands
 
-## Next Steps for Implementation
+**Client** (`frontend/src/hooks/useWebSocket.js`):
+- Connects to `REACT_APP_WS_URL` (must match HTTP server port)
+- Maintains connection status
 
-1. Set up project structure (backend/frontend folders)
-2. Initialize Node.js project with dependencies
-3. Configure MongoDB connection
-4. Implement NSE data fetcher service (test with manual runs first)
-5. Build Data Agent with 1-minute cron job
-6. Create database models (TickData, ChartData, TradingSignal)
-7. Implement Chart Agent for OHLC generation
-8. Build core indicators (start with EMA, RSI, MACD, Bollinger Bands)
-9. Implement Signal Agent with indicator combination logic
-10. Create REST API endpoints
-11. Set up WebSocket server
-12. Build React frontend with live charts
-13. Add historical data loader for testing
-14. Implement comprehensive error handling and logging
+### API Endpoints
+
+**Test Endpoints**:
+- `GET /api/test` - Test endpoint info
+- `GET /api/test/fetch-nse` - Manually fetch NSE data
+- `GET /api/test/market-status` - Market open/close status
+- `GET /api/test/latest-data` - Latest market data
+
+**Chart Endpoints**:
+- `GET /api/charts/*` - Chart data
+
+**Signal Endpoints**:
+- `GET /api/signals?index=NIFTY50&timeframe=5m` - Current signal for index/timeframe
+- `GET /api/signals-test` - Test signal generation
+- `GET /api/history` - Historical signals
+
+**Proxy Endpoints**:
+- `GET /api/investing/dow-jones` - Dow Jones data via backend proxy (bypasses Cloudflare)
+
+### Technical Indicator System (50+ Indicators)
+
+The system implements a comprehensive technical analysis engine with 50+ indicators across 6 categories. See `backend/INDICATORS_LIST.md` for the complete list.
+
+**Indicator Organization** (`backend/indicators/`):
+```
+indicators/
+├── index.js                      # Main exports for all indicators
+├── momentum/                     # 16 momentum indicators (RSI, Stochastic, CCI, etc.)
+├── trend/                        # 16 trend indicators (EMA, MACD, ADX, Ichimoku, etc.)
+├── volatility/                   # 6 volatility indicators (Bollinger Bands, ATR, etc.)
+├── volume/                       # 9 volume indicators (OBV, MFI, VWAP, etc.)
+├── support-resistance/           # 4 S/R indicators (Pivot Points, Fibonacci, etc.)
+└── options/                      # Options indicators (PCR, OI Analysis)
+```
+
+**Signal Weighting System** (`backend/services/signal-combiner.js`):
+
+Each category contributes differently to the final signal:
+- **Trend**: 30% - Most important for overall market direction
+- **Momentum**: 25% - Second-most important for timing
+- **Volume**: 15% - Confirms price movements
+- **Volatility**: 10% - Risk assessment
+- **Patterns**: 10% - Chart pattern recognition
+- **Support/Resistance**: 10% - Key price levels
+
+**Signal Generation Flow**:
+1. Calculate all 50+ indicators on OHLC candle data
+2. Each indicator returns a score (-100 to +100) and signal (BUY/SELL/NEUTRAL)
+3. Group scores by category and calculate category averages
+4. Apply category weights to get total weighted score
+5. Add agreement bonus when multiple indicators align
+6. Normalize to confidence percentage (0-100%)
+7. Determine action (BUY/SELL/HOLD) and strength (STRONG/MODERATE/WEAK)
+8. Calculate entry/exit levels using support/resistance zones
+
+**How to Add a New Indicator**:
+
+1. **Create indicator file** in appropriate category folder:
+```javascript
+// backend/indicators/momentum/my-indicator.js
+function calculateMyIndicator(candles, period = 14) {
+  // Validate data
+  if (!candles || candles.length < period) {
+    throw new Error('Insufficient data for My Indicator');
+  }
+
+  // Calculate indicator logic
+  const value = /* your calculation */;
+
+  // Determine signal
+  let signal = 'NEUTRAL', score = 0;
+  if (/* bullish condition */) {
+    signal = 'BUY';
+    score = 50; // Range: 0 to 100
+  } else if (/* bearish condition */) {
+    signal = 'SELL';
+    score = -50; // Range: -100 to 0
+  }
+
+  return {
+    name: 'My Indicator',
+    category: 'momentum', // or trend/volatility/volume/supportResistance
+    value,
+    signal: {
+      action: signal,
+      score,
+      strength: 'MODERATE' // STRONG/MODERATE/WEAK
+    },
+    interpretation: 'Human-readable explanation'
+  };
+}
+
+module.exports = { calculateMyIndicator };
+```
+
+2. **Export in index.js**:
+```javascript
+// backend/indicators/index.js
+const myIndicator = require('./momentum/my-indicator');
+
+module.exports = {
+  momentum: {
+    // ... existing indicators
+    myIndicator
+  },
+  // ... other categories
+};
+```
+
+3. **Integrate in signal-combiner.js**:
+```javascript
+// backend/services/signal-combiner.js
+async calculateAllIndicators(candles) {
+  const results = {};
+
+  // Add your indicator calculation
+  try {
+    if (candles.length >= 14) {
+      results.my_indicator = indicators.momentum.myIndicator.calculateMyIndicator(candles, 14);
+    }
+  } catch (error) {
+    console.log('My Indicator calculation skipped:', error.message);
+  }
+
+  return results;
+}
+```
+
+**Indicator Return Format** (Standard):
+```javascript
+{
+  name: 'Indicator Name',
+  category: 'trend|momentum|volatility|volume|supportResistance',
+  value: 42.5,                    // Numeric value
+  signal: {
+    action: 'BUY|SELL|NEUTRAL',
+    score: 65,                    // -100 to +100
+    strength: 'STRONG|MODERATE|WEAK'
+  },
+  interpretation: 'Explanation',  // Optional
+  // Additional indicator-specific fields (bands, levels, etc.)
+}
+```
+
+**Data Requirements**:
+- **Minimal** (2-10 candles): OBV, VWAP, Pivot Points
+- **Short** (11-20 candles): RSI, Stochastic, Bollinger Bands, ATR
+- **Medium** (21-35 candles): MACD, ADX, Aroon
+- **Long** (36+ candles): EMA 50, Ichimoku, Mass Index
+
+**Error Handling Pattern**:
+Always wrap indicator calculations in try-catch blocks. If insufficient data, log and skip gracefully:
+```javascript
+try {
+  if (candles.length >= minRequired) {
+    results.indicator_name = indicators.category.name.calculate(candles);
+  }
+} catch (error) {
+  console.log('Indicator calculation skipped:', error.message);
+}
+```
+
+**Testing Individual Indicators**:
+```bash
+# Create a test script
+node -e "
+const indicator = require('./indicators/momentum/rsi');
+const testCandles = [...]; // Your test data
+const result = indicator.calculateRSI(testCandles, 14);
+console.log(result);
+"
+```
+
+## Important Patterns and Best Practices
+
+### Chart Component Patterns
+
+**Chart Independence**:
+```javascript
+// ALWAYS destroy chart on symbol change to ensure independence
+useEffect(() => {
+  if (chartRef.current) {
+    try { chartRef.current.remove(); } catch (e) {}
+    chartRef.current = null;
+  }
+
+  // Create new chart for selected symbol
+  const chart = createChart(chartContainerRef.current, {...});
+  chartRef.current = chart;
+
+  // Cleanup on unmount or symbol change
+  return () => {
+    if (chart) {
+      try { chart.remove(); } catch (e) {}
+    }
+    chartRef.current = null;
+    candlestickSeriesRef.current = null;
+    lineSeriesRef.current = null;
+  };
+}, [selectedSymbol]); // Dependency on selectedSymbol is critical
+```
+
+**Error Handling for Chart Disposal**:
+- React Strict Mode remounts components, causing double disposal
+- Always wrap `chart.remove()` in try-catch blocks
+- Set refs to null after disposal to prevent stale references
+- Use try-catch in cleanup functions and resize handlers
+
+**Data Transformation**:
+```javascript
+// MoneyControl (Indian) → Candlestick
+chartData = data.t.map((timestamp, index) => ({
+  time: timestamp,
+  open: data.o[index],
+  high: data.h[index],
+  low: data.l[index],
+  close: data.c[index],
+}));
+
+// Investing.com (US) → Line Chart
+chartData = data.map(item => ({
+  time: Math.floor(item[0] / 1000), // Convert ms to seconds
+  value: item[4], // Close price
+}));
+```
+
+**Adding Multiple Indicator Series**:
+```javascript
+// Create chart with main candlestick series
+const chart = createChart(container, options);
+const candlestickSeries = chart.addCandlestickSeries();
+
+// Add EMA indicator lines
+const ema9Series = chart.addLineSeries({
+  color: '#2962FF',
+  lineWidth: 1,
+  title: 'EMA 9',
+});
+
+const ema21Series = chart.addLineSeries({
+  color: '#E91E63',
+  lineWidth: 1,
+  title: 'EMA 21',
+});
+
+// Add volume histogram on separate scale
+const volumeSeries = chart.addHistogramSeries({
+  color: '#26a69a',
+  priceFormat: { type: 'volume' },
+  priceScaleId: 'volume', // Separate price scale
+});
+
+// Configure volume scale to appear below main chart
+chart.priceScale('volume').applyOptions({
+  scaleMargins: {
+    top: 0.8,    // Volume takes bottom 20%
+    bottom: 0,
+  },
+});
+
+// Calculate and set EMA data
+const calculateEMA = (data, period) => {
+  const k = 2 / (period + 1);
+  const emaData = [];
+  let ema = 0;
+
+  // Initial SMA
+  for (let i = 0; i < period; i++) {
+    ema += data[i].close;
+  }
+  ema = ema / period;
+  emaData.push({ time: data[period - 1].time, value: ema });
+
+  // Subsequent EMA values
+  for (let i = period; i < data.length; i++) {
+    ema = data[i].close * k + ema * (1 - k);
+    emaData.push({ time: data[i].time, value: ema });
+  }
+  return emaData;
+};
+
+// Apply data to series
+candlestickSeries.setData(chartData);
+ema9Series.setData(calculateEMA(chartData, 9));
+ema21Series.setData(calculateEMA(chartData, 21));
+
+// Volume data with color based on price direction
+const volumeData = chartData.map(candle => ({
+  time: candle.time,
+  value: candle.volume || 0,
+  color: candle.close >= candle.open ? '#26a69a80' : '#ef535080'
+}));
+volumeSeries.setData(volumeData);
+```
+
+**Important**: Store all series in refs for cleanup:
+```javascript
+const ema9SeriesRef = useRef(null);
+const ema21SeriesRef = useRef(null);
+const volumeSeriesRef = useRef(null);
+
+// In cleanup
+return () => {
+  if (chartRef.current) {
+    try { chartRef.current.remove(); } catch (e) {}
+  }
+  chartRef.current = null;
+  candlestickSeriesRef.current = null;
+  ema9SeriesRef.current = null;
+  ema21SeriesRef.current = null;
+  volumeSeriesRef.current = null;
+};
+```
+
+### Backend Proxy Pattern
+
+When external APIs have CORS or Cloudflare protection:
+
+1. Create backend proxy endpoint (`routes/investing.js`):
+```javascript
+const response = await axios.get(external_url, {
+  params: {...},
+  headers: {
+    'User-Agent': 'Mozilla/5.0...',
+    'Accept': 'application/json',
+    'Referer': 'https://www.investing.com/',
+    'Origin': 'https://www.investing.com'
+  },
+  timeout: 10000
+});
+res.json({ success: true, data: response.data });
+```
+
+2. Frontend calls backend proxy instead of external API directly:
+```javascript
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const response = await fetch(`${API_URL}/api/investing/dow-jones`);
+```
+
+### WebSocket Configuration
+
+- Backend WebSocket runs on same port as HTTP server (3001), **not a separate port**
+- Frontend `.env` must have: `REACT_APP_WS_URL=ws://localhost:3001`
+- Common mistake: Setting WebSocket to different port causes connection failures
+
+### Background Agent Startup
+
+All agents auto-start in `backend/server.js` after server launch:
+```javascript
+function startBackgroundAgents() {
+  const DataAgent = require('./agents/data-agent');
+  const dataAgent = new DataAgent();
+  dataAgent.start();
+
+  require('./auto-chart-generator');
+  require('./auto-signal-generator');
+
+  const signalTracker = require('./services/signal-tracker');
+  signalTracker.startTracking();
+}
+```
+
+## Common Issues and Solutions
+
+**Chart independence problem** - "changing or reducing graph single indexes like nifty50 then rest also reflecting"
+- **Cause**: All symbols sharing same chart instance, zoom/pan state persists
+- **Solution**: Destroy and recreate chart on symbol change using `useEffect` dependency on `selectedSymbol`
+
+**WebSocket not connecting** - "market is open but price is not reflecting"
+- **Cause**: `.env` has wrong WebSocket port (e.g., 5001 instead of 3001)
+- **Solution**: Verify `REACT_APP_WS_URL=ws://localhost:3001` matches backend server port
+
+**React Strict Mode disposal errors** - "Object is disposed" in console
+- **Cause**: React Strict Mode remounts components, tries to dispose chart twice
+- **Solution**: Wrap all `chart.remove()` calls in try-catch, set refs to null after disposal
+
+**Cloudflare blocking** - "No data available from Investing.com"
+- **Cause**: Investing.com API protected by Cloudflare, returns "Just a moment..." page on direct browser fetch
+- **Solution**: Use backend proxy pattern (see `routes/investing.js`) with proper headers
+
+**MongoDB connection errors**
+- **Cause**: Deployment server IP not whitelisted in MongoDB Atlas
+- **Solution**: Check Network Access settings in MongoDB Atlas dashboard, whitelist server IP
+
+**Port conflicts**
+- **Backend**: Default port 3001 (configurable via `PORT` env var)
+- **Frontend dev server**: Port 3000
+- **WebSocket**: Same as backend HTTP server (3001), not a separate port
+
+## Deployment
+
+**Render Configuration**:
+- **Frontend**: Static site
+  - Build command: `npm run build`
+  - Publish directory: `build`
+- **Backend**: Web service
+  - Start command: `npm start`
+  - Port: 3001 (or `PORT` env var)
+  - Update `REACT_APP_API_URL` and `REACT_APP_WS_URL` to production backend URL
+
+**MongoDB Atlas**:
+- Whitelist deployment server IP in Network Access if connection fails
+- Use connection string format: `mongodb+srv://username:password@cluster.mongodb.net/dbname`
+
+**Environment Variables for Production**:
+- Backend: `PORT`, `MONGODB_URI`, `NODE_ENV=production`
+- Frontend: `REACT_APP_API_URL=https://your-backend-url.com`, `REACT_APP_WS_URL=wss://your-backend-url.com`

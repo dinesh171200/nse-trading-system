@@ -54,15 +54,39 @@ const tradingSignalSchema = new mongoose.Schema({
     volumeScore: Number,
     volatilityScore: Number,
     patternScore: Number,
+    supportResistanceScore: Number,  // NEW: Support/Resistance category score
     totalScore: Number,
     normalizedScore: Number
   },
   reasoning: [String],
   alerts: [String],
+  // ENHANCED: Market regime detection results
+  marketRegime: {
+    regime: {
+      type: String,
+      enum: ['STRONG_TRENDING', 'WEAK_TRENDING', 'RANGING', 'UNKNOWN']
+    },
+    volatility: {
+      type: String,
+      enum: ['VERY_HIGH', 'HIGH', 'ELEVATED', 'NORMAL', 'LOW', 'VERY_LOW', 'UNKNOWN']
+    },
+    confidence: Number,
+    interpretation: String
+  },
+  // ENHANCED: Dynamic weights used for this signal
+  dynamicWeights: {
+    TREND: Number,
+    MOMENTUM: Number,
+    VOLUME: Number,
+    VOLATILITY: Number,
+    SUPPORT_RESISTANCE: Number,
+    PATTERNS: Number
+  },
   metadata: {
     timeframe: String,
     indicatorsUsed: Number,
-    processingTime: Number
+    processingTime: Number,
+    enhancedScoring: Boolean  // NEW: Flag for enhanced scoring system
   },
   status: {
     type: String,
@@ -78,8 +102,15 @@ const tradingSignalSchema = new mongoose.Schema({
     },
     entryFilled: Boolean,
     exitPrice: Number,
+    exitTime: Date,
+    targetHit: {
+      type: String,
+      enum: ['TARGET1', 'TARGET2', 'TARGET3', 'STOPLOSS', 'NONE'],
+      default: 'NONE'
+    },
     profitLoss: Number,
-    profitLossPercent: Number
+    profitLossPercent: Number,
+    remarks: String
   }
 }, {
   timestamps: true

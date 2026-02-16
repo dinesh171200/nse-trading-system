@@ -16,7 +16,7 @@ const ChartData = require('../models/ChartData');
  */
 router.get('/live', async (req, res) => {
   try {
-    const { symbol, minConfidence = 50 } = req.query;
+    const { symbol, minConfidence = 65 } = req.query;
 
     // Build query
     const query = {
@@ -27,9 +27,9 @@ router.get('/live', async (req, res) => {
       query.symbol = symbol;
     }
 
-    // Get latest signals (within last 30 minutes)
-    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
-    query.timestamp = { $gte: thirtyMinutesAgo };
+    // Get latest signals (within last 3 minutes - signals refresh every 3 minutes)
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
+    query.timestamp = { $gte: threeMinutesAgo };
 
     const signals = await TradingSignal.find(query)
       .sort({ timestamp: -1 })
@@ -250,6 +250,48 @@ router.get('/statistics', async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching signal statistics:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/signals/clear-all
+ * Clear all signal history from database
+ */
+router.delete('/clear-all', async (req, res) => {
+  try {
+    const { confirm } = req.query;
+
+    if (confirm !== 'true') {
+      return res.status(400).json({
+        success: false,
+        error: 'Confirmation required. Add ?confirm=true to delete all signals.'
+      });
+    }
+
+    // Delete all signals from both collections
+    const tradingSignalsResult = await TradingSignal.deleteMany({});
+    const signalHistoryResult = await SignalHistory.deleteMany({});
+
+    console.log(`🗑️  Cleared all signal history:`);
+    console.log(`   - Deleted ${tradingSignalsResult.deletedCount} trading signals`);
+    console.log(`   - Deleted ${signalHistoryResult.deletedCount} signal history records`);
+
+    res.json({
+      success: true,
+      message: 'All signal history cleared successfully',
+      deleted: {
+        tradingSignals: tradingSignalsResult.deletedCount,
+        signalHistory: signalHistoryResult.deletedCount,
+        total: tradingSignalsResult.deletedCount + signalHistoryResult.deletedCount
+      }
+    });
+
+  } catch (error) {
+    console.error('Error clearing signal history:', error);
     res.status(500).json({
       success: false,
       error: error.message

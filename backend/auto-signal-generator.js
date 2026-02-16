@@ -97,14 +97,19 @@ async function generateSignals() {
               riskRewardRatio: bestSignal.levels.riskRewardRatio
             },
             indicators: bestSignal.indicators,
-            categoryScores: bestSignal.categoryScores,
+            scoring: bestSignal.scoring,  // Include category scores
             reasoning: entryReasoning,
             alerts: bestSignal.alerts,
+            // ENHANCED: Include market regime detection results
+            marketRegime: bestSignal.marketRegime,
+            // ENHANCED: Include dynamic weights used
+            dynamicWeights: bestSignal.dynamicWeights,
             metadata: {
               candleCount: bestSignal.metadata?.candleCount || 0,
               source: 'auto-signal-generator',
               supportLevels: bestSignal.levels.supportLevels,
-              resistanceLevels: bestSignal.levels.resistanceLevels
+              resistanceLevels: bestSignal.levels.resistanceLevels,
+              enhancedScoring: true  // Flag for enhanced scoring system
             }
           });
 
@@ -152,8 +157,8 @@ async function start() {
   // Generate signals immediately
   await generateSignals();
 
-  // Schedule to run every minute (synchronized with data collection)
-  cron.schedule('* * * * *', generateSignals);
+  // Schedule to run every 3 minutes (generate fresh signals every 3 minutes)
+  cron.schedule('*/3 * * * *', generateSignals);
 }
 
 start().catch(console.error);
