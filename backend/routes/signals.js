@@ -6,47 +6,76 @@
 const express = require('express');
 const router = express.Router();
 const SignalHistory = require('../models/SignalHistory');
+const TradingSignal = require('../models/TradingSignal');
 const signalCombiner = require('../services/signal-combiner');
 const ChartData = require('../models/ChartData');
 
 /**
  * GET /api/signals/live
- * Get current live trading signal for a symbol
+ * Get current live trading signals (from auto-generated signals)
  */
 router.get('/live', async (req, res) => {
   try {
-    const { symbol = 'NIFTY50', timeframe = '5m' } = req.query;
+    const { symbol, minConfidence = 50 } = req.query;
 
-    // Get recent chart data
-    const charts = await ChartData.find({
-      symbol,
-      timeframe
-    })
-    .sort({ timestamp: -1 })
-    .limit(100);
+    // Build query
+    const query = {
+      'signal.confidence': { $gte: parseFloat(minConfidence) }
+    };
 
-    if (charts.length < 10) {
+    if (symbol) {
+      query.symbol = symbol;
+    }
+
+    // Get latest signals (within last 30 minutes)
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    query.timestamp = { $gte: thirtyMinutesAgo };
+
+    const signals = await TradingSignal.find(query)
+      .sort({ timestamp: -1 })
+      .limit(10);
+
+    if (signals.length === 0) {
+      // Fallback: Try to generate signal on-the-fly
+      const fallbackSymbol = symbol || 'NIFTY50';
+      const charts = await ChartData.find({
+        symbol: fallbackSymbol,
+        timeframe: '5m'
+      })
+      .sort({ timestamp: -1 })
+      .limit(100);
+
+      if (charts.length < 10) {
+        return res.json({
+          success: false,
+          message: 'Not enough data to generate signal',
+          candlesAvailable: charts.length,
+          candlesNeeded: 10,
+          note: 'Signal generator is warming up. Signals will appear shortly.'
+        });
+      }
+
+      const chartData = charts.reverse();
+      const signal = await signalCombiner.generateSignal(chartData, {
+        symbol: fallbackSymbol,
+        timeframe: '5m',
+        minConfidence: 0
+      });
+
       return res.json({
-        success: false,
-        message: 'Not enough data to generate signal',
-        candlesAvailable: charts.length,
-        candlesNeeded: 10
+        success: true,
+        signals: [signal],
+        count: 1,
+        source: 'on-demand',
+        timestamp: new Date()
       });
     }
 
-    // Reverse to chronological order
-    const chartData = charts.reverse();
-
-    // Generate signal
-    const signal = await signalCombiner.generateSignal(chartData, {
-      symbol,
-      timeframe,
-      minConfidence: 0
-    });
-
     res.json({
       success: true,
-      signal,
+      signals,
+      count: signals.length,
+      source: 'auto-generated',
       timestamp: new Date()
     });
 

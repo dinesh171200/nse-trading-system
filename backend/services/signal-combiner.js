@@ -15,6 +15,7 @@
 
 const indicators = require('../indicators');
 const { INDICATOR_WEIGHTS } = require('../config/constants');
+const levelCalculator = require('./level-calculator');
 
 class SignalCombiner {
   constructor() {
@@ -59,20 +60,21 @@ class SignalCombiner {
       // Determine signal strength
       const strength = this.determineStrength(confidence);
 
-      // Calculate entry and exit levels
-      const levels = await this.calculateLevels(
+      // Calculate entry and exit levels using proper support/resistance
+      const levels = await levelCalculator.calculateTradingLevels(
         candles,
         action,
         currentPrice,
         indicatorResults
       );
 
-      // Generate reasoning
+      // Generate reasoning with entry basis
       const reasoning = this.generateReasoning(
         indicatorResults,
         categoryScores,
         action,
-        confidence
+        confidence,
+        levels
       );
 
       // Generate alerts
@@ -513,8 +515,15 @@ class SignalCombiner {
   /**
    * Generate reasoning for the signal
    */
-  generateReasoning(indicatorResults, categoryScores, action, confidence) {
+  generateReasoning(indicatorResults, categoryScores, action, confidence, levels) {
     const reasoning = [];
+
+    // Add level reasoning first if available
+    if (levels && levels.reasoning && levels.reasoning.length > 0) {
+      reasoning.push('📍 Trade Levels (Support/Resistance Based):');
+      levels.reasoning.forEach(r => reasoning.push('  ' + r));
+      reasoning.push('');
+    }
 
     // Overall signal
     if (action === 'STRONG_BUY') {

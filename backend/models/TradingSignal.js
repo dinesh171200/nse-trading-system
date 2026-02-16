@@ -23,7 +23,7 @@ const tradingSignalSchema = new mongoose.Schema({
     },
     strength: {
       type: String,
-      enum: ['STRONG', 'MODERATE', 'WEAK']
+      enum: ['VERY_STRONG', 'STRONG', 'MODERATE', 'WEAK', 'VERY_WEAK']
     },
     confidence: {
       type: Number,

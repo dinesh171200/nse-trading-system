@@ -46,6 +46,8 @@ app.use('/api/charts', require('./routes/chart'));
 app.use('/api/demo', require('./routes/demo'));
 app.use('/api/replay', require('./routes/replay'));
 app.use('/api/signals', require('./routes/signals'));
+app.use('/api/signals-test', require('./routes/signals-test'));
+app.use('/api/history', require('./routes/history'));
 
 // TODO: Import and use other routes
 // app.use('/api/options', require('./routes/options'));

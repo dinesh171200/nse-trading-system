@@ -1,0 +1,159 @@
+/**
+ * Auto Signal Generator
+ * Generates real-time trading signals analyzing all timeframes
+ */
+
+require('dotenv').config();
+const connectDB = require('./config/database');
+const ChartData = require('./models/ChartData');
+const TradingSignal = require('./models/TradingSignal');
+const signalCombiner = require('./services/signal-combiner');
+const signalTracker = require('./services/signal-tracker');
+const cron = require('node-cron');
+
+const SYMBOLS = ['NIFTY50', 'BANKNIFTY'];
+const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h'];
+const MIN_CANDLES = 5; // Lowered for faster signal generation
+
+async function generateSignals() {
+  try {
+    const istTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+    console.log(`\n[${istTime}] 🔍 Analyzing market and generating signals...`);
+
+    for (const symbol of SYMBOLS) {
+      console.log(`\n📊 ${symbol}:`);
+
+      let bestSignal = null;
+      let bestConfidence = 0;
+
+      // Analyze each timeframe
+      for (const timeframe of TIMEFRAMES) {
+        try {
+          // Get latest candles for this timeframe
+          const candles = await ChartData.find({ symbol, timeframe })
+            .sort({ timestamp: -1 })
+            .limit(100)
+            .lean();
+
+          if (candles.length < MIN_CANDLES) {
+            console.log(`  ${timeframe}: ⏳ Not enough data (${candles.length}/${MIN_CANDLES})`);
+            continue;
+          }
+
+          // Reverse to chronological order
+          candles.reverse();
+
+          // Generate signal for this timeframe
+          const signal = await signalCombiner.generateSignal(candles, {
+            symbol,
+            timeframe,
+            minConfidence: 0 // Generate all signals for analysis
+          });
+
+          const confidence = signal.signal.confidence;
+          const action = signal.signal.action;
+
+          console.log(`  ${timeframe}: ${action} (${confidence.toFixed(1)}%) - ${signal.signal.strength}`);
+
+          // Track best signal across timeframes
+          if (confidence > bestConfidence && action !== 'HOLD') {
+            bestSignal = signal;
+            bestConfidence = confidence;
+          }
+
+        } catch (error) {
+          console.log(`  ${timeframe}: ❌ ${error.message}`);
+        }
+      }
+
+      // Save best signal to database if confidence is high enough
+      if (bestSignal && bestConfidence >= 50) {
+        try {
+          // Build comprehensive reasoning
+          const entryReasoning = [
+            `🎯 ${bestSignal.signal.action} Signal Generated`,
+            `Timeframe: ${bestSignal.timeframe}`,
+            `Confidence: ${bestConfidence.toFixed(1)}% (${bestSignal.signal.strength})`,
+            '',
+            '📊 Entry Basis:',
+            ...bestSignal.reasoning.slice(0, 5),
+            '',
+            '💰 Trade Levels:',
+            ...(bestSignal.levels.reasoning || [])
+          ];
+
+          const signalDoc = new TradingSignal({
+            symbol,
+            timeframe: bestSignal.timeframe,
+            timestamp: new Date(),
+            currentPrice: bestSignal.currentPrice,
+            signal: bestSignal.signal,
+            levels: {
+              entry: bestSignal.levels.entry,
+              stopLoss: bestSignal.levels.stopLoss,
+              target1: bestSignal.levels.target1,
+              target2: bestSignal.levels.target2,
+              target3: bestSignal.levels.target3,
+              riskRewardRatio: bestSignal.levels.riskRewardRatio
+            },
+            indicators: bestSignal.indicators,
+            categoryScores: bestSignal.categoryScores,
+            reasoning: entryReasoning,
+            alerts: bestSignal.alerts,
+            metadata: {
+              candleCount: bestSignal.metadata?.candleCount || 0,
+              source: 'auto-signal-generator',
+              supportLevels: bestSignal.levels.supportLevels,
+              resistanceLevels: bestSignal.levels.resistanceLevels
+            }
+          });
+
+          await signalDoc.save();
+
+          console.log(`\n  ✅ SIGNAL SAVED: ${bestSignal.signal.action} @ ₹${bestSignal.currentPrice.toFixed(2)}`);
+          console.log(`     Confidence: ${bestConfidence.toFixed(1)}% | Timeframe: ${bestSignal.timeframe}`);
+          console.log(`     Entry: ₹${bestSignal.levels.entry.toFixed(2)} | SL: ₹${bestSignal.levels.stopLoss.toFixed(2)}`);
+          console.log(`     Targets: ₹${bestSignal.levels.target1.toFixed(2)}, ₹${bestSignal.levels.target2.toFixed(2)}, ₹${bestSignal.levels.target3.toFixed(2)}`);
+
+        } catch (error) {
+          console.error(`  ❌ Error saving signal: ${error.message}`);
+        }
+      } else if (bestSignal) {
+        console.log(`\n  ⚠️  Signal confidence too low (${bestConfidence.toFixed(1)}% < 50%)`);
+      } else {
+        console.log(`\n  ⏸️  No actionable signals (all HOLD)`);
+      }
+    }
+
+    console.log('\n✓ Signal generation cycle completed');
+
+  } catch (error) {
+    console.error('❌ Error in signal generation:', error.message);
+  }
+}
+
+async function start() {
+  await connectDB();
+
+  console.log('═══════════════════════════════════════════════════');
+  console.log('  🎯 Auto Signal Generator - Multi-Timeframe Analysis');
+  console.log('═══════════════════════════════════════════════════\n');
+  console.log('✓ Analyzing: Nifty 50 & Bank Nifty');
+  console.log('✓ Timeframes: 1m, 5m, 15m, 30m, 1h');
+  console.log('✓ Update Interval: Every 1 minute');
+  console.log('✓ Min Confidence: 50% to save signal');
+  console.log('✓ Levels: Support/Resistance + Pivot Points');
+  console.log('✓ Performance Tracking: Active');
+  console.log('✓ Press Ctrl+C to stop\n');
+
+  // Start signal performance tracker
+  await signalTracker.startTracking();
+
+  // Generate signals immediately
+  await generateSignals();
+
+  // Schedule to run every minute (synchronized with data collection)
+  cron.schedule('* * * * *', generateSignals);
+}
+
+start().catch(console.error);

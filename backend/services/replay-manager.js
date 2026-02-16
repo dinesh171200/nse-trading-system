@@ -96,6 +96,12 @@ class ReplayManager {
       this.currentIndex = 0; // Loop back to start
     }
 
+    // Check if we have any ticks at all
+    if (this.allTicks.length === 0) {
+      console.log('⚠️  No ticks available for replay');
+      return;
+    }
+
     const currentTick = this.allTicks[this.currentIndex];
 
     // Get all ticks up to current point
