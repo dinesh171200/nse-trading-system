@@ -933,13 +933,13 @@ function MoneyControlChart({ initialSymbol = 'NIFTY50', onSymbolChange }) {
   useEffect(() => {
     fetchMoneyControlData();
 
-    // Auto-refresh every 1 minute
+    // Auto-refresh every 20 seconds for more responsive price updates
     const interval = setInterval(() => {
       fetchMoneyControlData();
-    }, 60 * 1000);
+    }, 20 * 1000); // 20 seconds
 
     return () => clearInterval(interval);
-  }, [selectedSymbol]);
+  }, [selectedSymbol, fetchMoneyControlData]);
 
   const symbolConfig = SYMBOLS[selectedSymbol];
 

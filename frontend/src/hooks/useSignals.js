@@ -28,8 +28,8 @@ export const useSignals = (symbol, timeframe) => {
   // Initial fetch
   useEffect(() => {
     fetchSignal();
-    // Refresh every 2 minutes
-    const interval = setInterval(fetchSignal, 120000);
+    // Refresh every 30 seconds for more responsive updates
+    const interval = setInterval(fetchSignal, 30000);
     return () => clearInterval(interval);
   }, [fetchSignal]);
 
