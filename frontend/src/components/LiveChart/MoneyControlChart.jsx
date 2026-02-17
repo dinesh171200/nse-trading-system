@@ -28,6 +28,7 @@ function MoneyControlChart({ initialSymbol = 'NIFTY50', onSymbolChange }) {
   const ema50SeriesRef = useRef(null);
   const volumeSeriesRef = useRef(null);
   const priceLinesRef = useRef([]); // Store price line references
+  const isInitialLoadRef = useRef(true); // Track if this is the first data load
 
   const [selectedSymbol, setSelectedSymbol] = useState(initialSymbol);
   const [loading, setLoading] = useState(true);
@@ -441,6 +442,9 @@ function MoneyControlChart({ initialSymbol = 'NIFTY50', onSymbolChange }) {
       }
       chartRef.current = null;
     }
+
+    // Reset initial load flag when symbol changes
+    isInitialLoadRef.current = true;
 
     // Create new chart with better visibility
     const chart = createChart(chartContainerRef.current, {
@@ -912,7 +916,9 @@ function MoneyControlChart({ initialSymbol = 'NIFTY50', onSymbolChange }) {
       lineSeriesRef.current.setData(chartData);
     }
 
-    if (chartRef.current) {
+    // Only reset zoom/pan on initial load, not on subsequent refreshes
+    // This allows users to zoom in/out without being interrupted
+    if (chartRef.current && isInitialLoadRef.current) {
       // Show last 200 candles initially (about 16 hours of 5-min data)
       // User can scroll left to see more history
       const timeScale = chartRef.current.timeScale();
@@ -926,6 +932,9 @@ function MoneyControlChart({ initialSymbol = 'NIFTY50', onSymbolChange }) {
       } else {
         timeScale.fitContent();
       }
+
+      // Mark initial load as complete
+      isInitialLoadRef.current = false;
     }
   };
 

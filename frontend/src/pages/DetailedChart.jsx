@@ -16,6 +16,7 @@ function DetailedChart() {
   const chartRef = useRef(null);
   const candlestickSeriesRef = useRef(null);
   const lineSeriesRef = useRef(null);
+  const isInitialLoadRef = useRef(true); // Track if this is the first data load
 
   const [selectedSymbol, setSelectedSymbol] = useState('NIFTY50');
   const [loading, setLoading] = useState(true);
@@ -111,6 +112,9 @@ function DetailedChart() {
       chartRef.current = null;
     }
 
+    // Reset initial load flag when symbol changes
+    isInitialLoadRef.current = true;
+
     // Create new chart
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -202,9 +206,12 @@ function DetailedChart() {
       lineSeriesRef.current.setData(chartData);
     }
 
-    // Fit content to chart
-    if (chartRef.current) {
+    // Only reset zoom/pan on initial load, not on subsequent refreshes
+    // This allows users to zoom in/out without being interrupted
+    if (chartRef.current && isInitialLoadRef.current) {
       chartRef.current.timeScale().fitContent();
+      // Mark initial load as complete
+      isInitialLoadRef.current = false;
     }
   };
 
