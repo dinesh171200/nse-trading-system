@@ -15,10 +15,27 @@ const SYMBOLS = ['NIFTY50', 'BANKNIFTY'];
 const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h'];
 const MIN_CANDLES = 5; // Lowered for faster signal generation
 
-async function generateSignals() {
+// Track last signal prices for price-change detection
+const lastSignalPrices = {
+  NIFTY50: null,
+  BANKNIFTY: null
+};
+
+// Minimum price change (%) to trigger signal regeneration
+const PRICE_CHANGE_THRESHOLD = 0.3; // 0.3% price movement triggers new signal
+
+// Check if significant price change occurred
+function shouldGenerateSignal(symbol, currentPrice) {
+  if (!lastSignalPrices[symbol]) return true; // First time, always generate
+
+  const priceChange = Math.abs((currentPrice - lastSignalPrices[symbol]) / lastSignalPrices[symbol]) * 100;
+  return priceChange >= PRICE_CHANGE_THRESHOLD;
+}
+
+async function generateSignals(triggeredBy = 'schedule') {
   try {
     const istTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-    console.log(`\n[${istTime}] 🔍 Analyzing market and generating signals...`);
+    console.log(`\n[${istTime}] 🔍 Analyzing market (triggered by: ${triggeredBy})...`);
 
     for (const symbol of SYMBOLS) {
       console.log(`\n📊 ${symbol}:`);
@@ -115,6 +132,9 @@ async function generateSignals() {
 
           await signalDoc.save();
 
+          // Update last signal price for price-change detection
+          lastSignalPrices[symbol] = bestSignal.currentPrice;
+
           console.log(`\n  ✅ SIGNAL SAVED: ${bestSignal.signal.action} @ ₹${bestSignal.currentPrice.toFixed(2)}`);
           console.log(`     Confidence: ${bestConfidence.toFixed(1)}% | Timeframe: ${bestSignal.timeframe}`);
           console.log(`     Entry: ₹${bestSignal.levels.entry.toFixed(2)} | SL: ₹${bestSignal.levels.stopLoss.toFixed(2)}`);
@@ -155,10 +175,41 @@ async function start() {
   await signalTracker.startTracking();
 
   // Generate signals immediately
-  await generateSignals();
+  await generateSignals('initial');
 
-  // Schedule to run every 3 minutes (generate fresh signals every 3 minutes)
-  cron.schedule('*/3 * * * *', generateSignals);
+  // Schedule 1: Time-based - Run every 3 minutes regardless of price
+  cron.schedule('*/3 * * * *', () => generateSignals('3-minute schedule'));
+
+  // Schedule 2: Price-change based - Check every minute for significant price movement
+  cron.schedule('* * * * *', async () => {
+    try {
+      // Get current prices
+      const latestData = await ChartData.find({})
+        .sort({ timestamp: -1 })
+        .limit(2);
+
+      for (const data of latestData) {
+        const symbol = data.symbol;
+        const currentPrice = data.ohlc.close;
+
+        // Check if price changed significantly
+        if (shouldGenerateSignal(symbol, currentPrice)) {
+          const priceChange = lastSignalPrices[symbol]
+            ? Math.abs((currentPrice - lastSignalPrices[symbol]) / lastSignalPrices[symbol]) * 100
+            : 0;
+
+          console.log(`\n⚡ Price change detected for ${symbol}: ${priceChange.toFixed(2)}% (threshold: ${PRICE_CHANGE_THRESHOLD}%)`);
+          await generateSignals(`price-change: ${priceChange.toFixed(2)}%`);
+          break; // Generate once, then wait for next check
+        }
+      }
+    } catch (error) {
+      // Silently fail - don't spam logs
+    }
+  });
+
+  console.log('✓ Price-change monitoring: Active (checks every minute)');
+  console.log(`✓ Price-change threshold: ${PRICE_CHANGE_THRESHOLD}% movement triggers new signal`);
 }
 
 start().catch(console.error);

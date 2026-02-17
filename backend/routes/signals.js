@@ -16,7 +16,7 @@ const ChartData = require('../models/ChartData');
  */
 router.get('/live', async (req, res) => {
   try {
-    const { symbol, minConfidence = 65 } = req.query;
+    const { symbol, minConfidence = 55 } = req.query;  // Lowered from 65 to 55
 
     // Build query
     const query = {

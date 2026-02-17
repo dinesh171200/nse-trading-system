@@ -5,7 +5,7 @@ const ChartData = require('../models/ChartData');
 class SignalAgent {
   constructor() {
     this.isRunning = false;
-    this.minConfidence = parseInt(process.env.MIN_CONFIDENCE) || 65;
+    this.minConfidence = parseInt(process.env.MIN_CONFIDENCE) || 55;
   }
 
   start() {
