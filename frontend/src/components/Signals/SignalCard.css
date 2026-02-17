@@ -136,6 +136,107 @@
   box-shadow: 0 0 10px rgba(255, 68, 68, 0.6);
 }
 
+/* Bullish vs Bearish Display */
+.bullish-bearish-display {
+  margin-bottom: 1.5rem;
+  padding: 1.2rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border-radius: 12px;
+  border: 2px solid rgba(102, 126, 234, 0.2);
+}
+
+.percentage-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.percentage-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  border-radius: 10px;
+  transition: all 0.3s;
+}
+
+.percentage-item.bullish-item {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 255, 136, 0.08));
+  border: 2px solid rgba(0, 255, 136, 0.3);
+}
+
+.percentage-item.bearish-item {
+  background: linear-gradient(135deg, rgba(255, 68, 68, 0.15), rgba(255, 68, 68, 0.08));
+  border: 2px solid rgba(255, 68, 68, 0.3);
+}
+
+.percentage-label {
+  font-size: 1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.percentage-value {
+  font-size: 1.8rem;
+  font-weight: 900;
+  font-family: 'Courier New', monospace;
+  color: #ffffff;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+}
+
+.bullish-item .percentage-value {
+  color: #00ff88;
+  text-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+}
+
+.bearish-item .percentage-value {
+  color: #ff4444;
+  text-shadow: 0 0 20px rgba(255, 68, 68, 0.6);
+}
+
+.percentage-bars {
+  display: flex;
+  gap: 0.5rem;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.1);
+  margin-bottom: 0.8rem;
+}
+
+.percentage-bar {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.percentage-bar.bullish-bar {
+  background: linear-gradient(90deg, #00ff88, #00cc70);
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+}
+
+.percentage-bar.bearish-bar {
+  background: linear-gradient(90deg, #ff4444, #cc0000);
+  box-shadow: 0 0 8px rgba(255, 68, 68, 0.5);
+}
+
+.neutral-message {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ff9800;
+  text-align: center;
+  padding: 0.8rem;
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.08));
+  border-radius: 8px;
+  border: 2px solid rgba(255, 152, 0, 0.3);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 .signal-details {
   display: flex;
   flex-direction: column;

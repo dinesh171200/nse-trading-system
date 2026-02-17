@@ -56,6 +56,31 @@ const SignalCard = ({ signal }) => {
         />
       </div>
 
+      {/* Bullish vs Bearish Percentages */}
+      {signal.signal.bullishPercentage !== undefined && signal.signal.bearishPercentage !== undefined && (
+        <div className="bullish-bearish-display">
+          <div className="percentage-row">
+            <div className="percentage-item bullish-item">
+              <span className="percentage-label">📈 Bullish</span>
+              <span className="percentage-value">{signal.signal.bullishPercentage}%</span>
+            </div>
+            <div className="percentage-item bearish-item">
+              <span className="percentage-label">📉 Bearish</span>
+              <span className="percentage-value">{signal.signal.bearishPercentage}%</span>
+            </div>
+          </div>
+          <div className="percentage-bars">
+            <div className="percentage-bar bullish-bar" style={{ width: `${signal.signal.bullishPercentage}%` }} />
+            <div className="percentage-bar bearish-bar" style={{ width: `${signal.signal.bearishPercentage}%` }} />
+          </div>
+          {signal.signal.action === 'HOLD' && (
+            <div className="neutral-message">
+              ⚖️ Market in neutral zone - waiting for clear signal
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="signal-details">
         <div className="detail-row">
           <span className="detail-label">Current Price:</span>

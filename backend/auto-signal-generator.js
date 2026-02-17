@@ -11,14 +11,15 @@ const signalCombiner = require('./services/signal-combiner');
 const signalTracker = require('./services/signal-tracker');
 const cron = require('node-cron');
 
-const SYMBOLS = ['NIFTY50', 'BANKNIFTY'];
+const SYMBOLS = ['NIFTY50', 'BANKNIFTY', 'DOWJONES'];
 const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h'];
 const MIN_CANDLES = 5; // Lowered for faster signal generation
 
 // Track last signal prices for price-change detection
 const lastSignalPrices = {
   NIFTY50: null,
-  BANKNIFTY: null
+  BANKNIFTY: null,
+  DOWJONES: null
 };
 
 // Minimum price change (%) to trigger signal regeneration

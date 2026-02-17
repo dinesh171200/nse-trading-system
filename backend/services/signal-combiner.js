@@ -76,8 +76,14 @@ class SignalCombiner {
         indicatorResults
       );
 
-      // Determine signal action
-      const action = this.determineAction(totalScore, confidence);
+      // Calculate bullish and bearish percentages from total score
+      // totalScore ranges from -100 (fully bearish) to +100 (fully bullish)
+      const bullishPercentage = ((totalScore + 100) / 200) * 100; // 0-100%
+      const bearishPercentage = 100 - bullishPercentage; // 0-100%
+      const percentageDifference = Math.abs(bullishPercentage - bearishPercentage);
+
+      // Determine signal action (now stricter - requires clear dominance)
+      const action = this.determineAction(totalScore, confidence, percentageDifference);
 
       // Determine signal strength
       const strength = this.determineStrength(confidence);
@@ -118,7 +124,10 @@ class SignalCombiner {
           action,
           strength,
           confidence,
-          confidenceLevel: this.getConfidenceLevel(confidence)
+          confidenceLevel: this.getConfidenceLevel(confidence),
+          bullishPercentage: Math.round(bullishPercentage),
+          bearishPercentage: Math.round(bearishPercentage),
+          percentageDifference: Math.round(percentageDifference)
         },
 
         levels,
@@ -850,21 +859,32 @@ class SignalCombiner {
   /**
    * Determine signal action
    */
-  determineAction(totalScore, confidence) {
-    if (confidence < 50) {
-      return 'HOLD'; // Low confidence, no clear signal
+  determineAction(totalScore, confidence, percentageDifference) {
+    // STRICTER CONFIRMATION LOGIC:
+    // Only give BUY/SELL signals when:
+    // 1. Confidence is high (>= 65%)
+    // 2. There's a clear winner (difference >= 30%)
+    // Otherwise, show NEUTRAL even if slightly bullish/bearish
+
+    if (confidence < 65) {
+      return 'HOLD'; // Confidence too low for any signal
     }
 
+    if (percentageDifference < 30) {
+      return 'HOLD'; // Too close to call, stay neutral
+    }
+
+    // Now check for buy/sell signals with strict thresholds
     if (totalScore >= 50) {
-      return 'STRONG_BUY';
-    } else if (totalScore >= 20) {
-      return 'BUY';
+      return 'STRONG_BUY'; // Very bullish + high confidence + clear winner
+    } else if (totalScore >= 25) {
+      return 'BUY'; // Bullish + high confidence + clear winner
     } else if (totalScore <= -50) {
-      return 'STRONG_SELL';
-    } else if (totalScore <= -20) {
-      return 'SELL';
+      return 'STRONG_SELL'; // Very bearish + high confidence + clear winner
+    } else if (totalScore <= -25) {
+      return 'SELL'; // Bearish + high confidence + clear winner
     } else {
-      return 'HOLD';
+      return 'HOLD'; // Score between -25 and +25 is neutral zone
     }
   }
 
