@@ -22,7 +22,7 @@ function Dashboard() {
     'NIFTY50': 'NIFTY50',
     'BANKNIFTY': 'BANKNIFTY',
     'GIFTNIFTY': 'NIFTY50', // Use NIFTY50 signals for Gift Nifty (similar correlation)
-    'DOWJONES': 'NIFTY50'   // Use NIFTY50 signals for Dow Jones (no US signals available)
+    'DOWJONES': 'DOWJONES'   // Use DOWJONES signals (now available!)
   };
 
   // Chart display names
@@ -65,7 +65,7 @@ function Dashboard() {
               ) : signal ? (
                 <>
                   <SignalCard signal={signal} />
-                  {(selectedChart === 'GIFTNIFTY' || selectedChart === 'DOWJONES') && (
+                  {selectedChart === 'GIFTNIFTY' && (
                     <div style={{
                       marginTop: '10px',
                       padding: '8px 12px',
