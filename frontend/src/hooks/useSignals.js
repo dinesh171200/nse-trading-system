@@ -28,10 +28,10 @@ export const useSignals = (symbol, timeframe) => {
   // Initial fetch
   useEffect(() => {
     fetchSignal();
-    // Refresh every 30 seconds for more responsive updates
-    const interval = setInterval(fetchSignal, 30000);
+    // Refresh every 10 seconds for more responsive updates
+    const interval = setInterval(fetchSignal, 10000);
     return () => clearInterval(interval);
-  }, [fetchSignal]);
+  }, [symbol, timeframe]); // Only depend on symbol and timeframe to avoid infinite re-renders
 
   // Listen for WebSocket updates
   useWebSocketEvent('signal-generated', (newSignal) => {

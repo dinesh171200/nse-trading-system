@@ -219,13 +219,13 @@ function DetailedChart() {
   useEffect(() => {
     fetchMoneyControlData();
 
-    // Auto-refresh every 20 seconds for more responsive price updates
+    // Auto-refresh every 10 seconds for more responsive price updates
     const interval = setInterval(() => {
       fetchMoneyControlData();
-    }, 20 * 1000); // 20 seconds
+    }, 10 * 1000); // 10 seconds
 
     return () => clearInterval(interval);
-  }, [selectedSymbol, fetchMoneyControlData]);
+  }, [selectedSymbol]); // Only depend on selectedSymbol to avoid infinite re-renders
 
   return (
     <div className="detailed-chart-page">
