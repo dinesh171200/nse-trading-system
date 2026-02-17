@@ -16,13 +16,26 @@ export const useSignals = (symbol, timeframe) => {
       if (response.success) {
         setSignal(response.data);
         setError(null);
+      } else {
+        // No signal found - clear old signal instead of keeping it
+        setSignal(null);
+        setError('No signal available for this index');
       }
     } catch (err) {
+      // Error fetching - also clear old signal
+      setSignal(null);
       setError(err.message);
       console.error('Failed to fetch signal:', err);
     } finally {
       setLoading(false);
     }
+  }, [symbol, timeframe]);
+
+  // Clear signal immediately when symbol/timeframe changes
+  useEffect(() => {
+    setSignal(null);
+    setError(null);
+    setLoading(true);
   }, [symbol, timeframe]);
 
   // Initial fetch
