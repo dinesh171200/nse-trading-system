@@ -12,7 +12,8 @@ export const useSignals = (symbol, timeframe) => {
 
     try {
       setLoading(true);
-      const response = await getTradingSignal(symbol, timeframe, 50);
+      // Get ALL signals including HOLD (minConfidence=0) to show bullish/bearish percentages
+      const response = await getTradingSignal(symbol, timeframe, 0);
       if (response.success) {
         setSignal(response.data);
         setError(null);
