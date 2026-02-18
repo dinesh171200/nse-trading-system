@@ -15,8 +15,9 @@ async function generateCharts() {
 
     await chartGenerator.generateAllTimeframes('NIFTY50', { lookbackHours: 1 });
     await chartGenerator.generateAllTimeframes('BANKNIFTY', { lookbackHours: 1 });
+    await chartGenerator.generateAllTimeframes('DOWJONES', { lookbackHours: 1 });
 
-    console.log('✓ Charts updated successfully');
+    console.log('✓ Charts updated successfully (Nifty 50, Bank Nifty, Dow Jones)');
   } catch (error) {
     console.error('✗ Error generating charts:', error.message);
   }

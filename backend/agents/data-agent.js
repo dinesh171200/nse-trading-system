@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const TickData = require('../models/TickData');
 const nseFetcher = require('../services/nse-fetcher');
+const dowJonesFetcher = require('../services/dow-jones-fetcher');
 
 class DataAgent {
   constructor() {
@@ -48,12 +49,22 @@ class DataAgent {
       const bankNiftyDoc = await TickData.create(allData.bankNifty);
       console.log(`  ✓ Bank Nifty: ₹${allData.bankNifty.price.toFixed(2)} (${allData.bankNifty.metadata.changePercent >= 0 ? '+' : ''}${allData.bankNifty.metadata.changePercent.toFixed(2)}%)`);
 
+      // Fetch and store Dow Jones data
+      let dowJonesDoc = null;
+      try {
+        const dowJonesData = await dowJonesFetcher.fetch();
+        dowJonesDoc = await TickData.create(dowJonesData);
+        console.log(`  ✓ Dow Jones:  $${dowJonesData.price.toFixed(2)} (${dowJonesData.metadata.changePercent >= 0 ? '+' : ''}${dowJonesData.metadata.changePercent.toFixed(2)}%)`);
+      } catch (error) {
+        console.log(`  ⚠ Dow Jones:  Failed to fetch (${error.message})`);
+      }
+
       console.log('  ✓ Data stored in database');
 
       // TODO: Emit event to trigger chart agent
-      // eventEmitter.emit('tick-data-saved', { nifty50Doc, bankNiftyDoc });
+      // eventEmitter.emit('tick-data-saved', { nifty50Doc, bankNiftyDoc, dowJonesDoc });
 
-      return { nifty50Doc, bankNiftyDoc };
+      return { nifty50Doc, bankNiftyDoc, dowJonesDoc };
 
     } catch (error) {
       console.error('  ✗ Error fetching data:', error.message);
