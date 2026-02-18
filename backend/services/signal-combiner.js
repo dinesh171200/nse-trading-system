@@ -860,31 +860,31 @@ class SignalCombiner {
    * Determine signal action
    */
   determineAction(totalScore, confidence, percentageDifference) {
-    // STRICTER CONFIRMATION LOGIC:
-    // Only give BUY/SELL signals when:
-    // 1. Confidence is high (>= 65%)
-    // 2. There's a clear winner (difference >= 30%)
-    // Otherwise, show NEUTRAL even if slightly bullish/bearish
+    // BALANCED CONFIRMATION LOGIC:
+    // Give BUY/SELL signals when:
+    // 1. Confidence is reasonable (>= 58%)
+    // 2. There's a clear direction (difference >= 20%)
+    // This ensures signals on trending days while filtering noise
 
-    if (confidence < 65) {
+    if (confidence < 58) {
       return 'HOLD'; // Confidence too low for any signal
     }
 
-    if (percentageDifference < 30) {
-      return 'HOLD'; // Too close to call, stay neutral
+    if (percentageDifference < 20) {
+      return 'HOLD'; // Too close to call (like 55/45), stay neutral
     }
 
-    // Now check for buy/sell signals with strict thresholds
+    // Now check for buy/sell signals with practical thresholds
     if (totalScore >= 50) {
-      return 'STRONG_BUY'; // Very bullish + high confidence + clear winner
-    } else if (totalScore >= 25) {
-      return 'BUY'; // Bullish + high confidence + clear winner
+      return 'STRONG_BUY'; // Very bullish (70%+ bullish)
+    } else if (totalScore >= 15) {
+      return 'BUY'; // Bullish (58%+ bullish with 20%+ difference)
     } else if (totalScore <= -50) {
-      return 'STRONG_SELL'; // Very bearish + high confidence + clear winner
-    } else if (totalScore <= -25) {
-      return 'SELL'; // Bearish + high confidence + clear winner
+      return 'STRONG_SELL'; // Very bearish (70%+ bearish)
+    } else if (totalScore <= -15) {
+      return 'SELL'; // Bearish (58%+ bearish with 20%+ difference)
     } else {
-      return 'HOLD'; // Score between -25 and +25 is neutral zone
+      return 'HOLD'; // Score between -15 and +15 is neutral zone (52-58% range)
     }
   }
 
