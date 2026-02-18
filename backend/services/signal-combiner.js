@@ -908,6 +908,36 @@ class SignalCombiner {
     return 'LOW';
   }
 
+  getTrendEmoji(score) {
+    if (score > 40) return '🚀 Strong Up';
+    if (score > 15) return '📈 Bullish';
+    if (score > -15) return '➡️ Neutral';
+    if (score > -40) return '📉 Bearish';
+    return '🔻 Strong Down';
+  }
+
+  getMomentumEmoji(score) {
+    if (score > 40) return '⚡ Strong';
+    if (score > 15) return '✅ Positive';
+    if (score > -15) return '⏸️ Flat';
+    if (score > -40) return '⚠️ Negative';
+    return '❌ Weak';
+  }
+
+  getVolumeEmoji(score) {
+    if (score > 30) return '🔥 High';
+    if (score > 10) return '📊 Moderate';
+    if (score > -10) return '➡️ Average';
+    if (score > -30) return '📉 Low';
+    return '💤 Very Low';
+  }
+
+  getVolatilityEmoji(score) {
+    if (Math.abs(score) > 40) return '🌪️ High';
+    if (Math.abs(score) > 20) return '🌊 Moderate';
+    return '😌 Low';
+  }
+
   /**
    * Calculate entry and exit levels
    */
@@ -996,39 +1026,78 @@ class SignalCombiner {
       reasoning.push('');
     }
 
-    // Overall signal
+    // Overall signal with detailed breakdown
     if (action === 'STRONG_BUY') {
-      reasoning.push(`Strong buy signal detected with ${confidence.toFixed(0)}% confidence`);
+      reasoning.push(`🚀 Strong buy signal detected with ${confidence.toFixed(0)}% confidence`);
     } else if (action === 'BUY') {
-      reasoning.push(`Buy signal detected with ${confidence.toFixed(0)}% confidence`);
+      reasoning.push(`✅ Buy signal detected with ${confidence.toFixed(0)}% confidence`);
     } else if (action === 'STRONG_SELL') {
-      reasoning.push(`Strong sell signal detected with ${confidence.toFixed(0)}% confidence`);
+      reasoning.push(`🛑 Strong sell signal detected with ${confidence.toFixed(0)}% confidence`);
     } else if (action === 'SELL') {
-      reasoning.push(`Sell signal detected with ${confidence.toFixed(0)}% confidence`);
+      reasoning.push(`⛔ Sell signal detected with ${confidence.toFixed(0)}% confidence`);
     } else {
-      reasoning.push(`No clear signal - market in neutral zone (${confidence.toFixed(0)}% confidence)`);
+      reasoning.push(`⏸️ Market in ranging mode - ${confidence.toFixed(0)}% confidence`);
+      reasoning.push('');
+      reasoning.push('📊 Why No Entry:');
+
+      // Explain why it's ranging
+      const reasons = [];
+      if (Math.abs(categoryScores.trend || 0) < 15) {
+        reasons.push('• Weak trend - no clear directional bias');
+      }
+      if (Math.abs(categoryScores.momentum || 0) < 20) {
+        reasons.push('• Momentum neutral - bulls and bears balanced');
+      }
+      if (confidence < 65) {
+        reasons.push(`• Confidence ${confidence.toFixed(0)}% - need 65%+ for entry`);
+      }
+
+      reasons.forEach(r => reasoning.push(r));
+      reasoning.push('');
     }
 
-    // Trend analysis
-    if (categoryScores.trend > 30) {
-      reasoning.push('Strong uptrend confirmed by trend indicators');
-    } else if (categoryScores.trend > 10) {
-      reasoning.push('Moderate uptrend detected');
-    } else if (categoryScores.trend < -30) {
-      reasoning.push('Strong downtrend confirmed by trend indicators');
-    } else if (categoryScores.trend < -10) {
-      reasoning.push('Moderate downtrend detected');
+    // Detailed category analysis (ALWAYS show)
+    reasoning.push('📈 Indicator Breakdown:');
+    reasoning.push(`• Trend: ${(categoryScores.trend || 0).toFixed(0)}/100 ${this.getTrendEmoji(categoryScores.trend)}`);
+    reasoning.push(`• Momentum: ${(categoryScores.momentum || 0).toFixed(0)}/100 ${this.getMomentumEmoji(categoryScores.momentum)}`);
+    reasoning.push(`• Volume: ${(categoryScores.volume || 0).toFixed(0)}/100 ${this.getVolumeEmoji(categoryScores.volume)}`);
+    if (categoryScores.volatility) {
+      reasoning.push(`• Volatility: ${categoryScores.volatility.toFixed(0)}/100 ${this.getVolatilityEmoji(categoryScores.volatility)}`);
     }
+    reasoning.push('');
 
-    // Momentum analysis
+    // Key indicator values (ALWAYS show specific numbers)
+    reasoning.push('🔍 Key Indicators:');
+
+    // RSI
     if (indicatorResults.rsi_14) {
       const rsi = indicatorResults.rsi_14;
-      if (rsi.value < 30) {
-        reasoning.push(`RSI at ${rsi.value.toFixed(0)} indicates oversold conditions (bullish)`);
-      } else if (rsi.value > 70) {
-        reasoning.push(`RSI at ${rsi.value.toFixed(0)} indicates overbought conditions (bearish)`);
-      }
+      let rsiNote = '';
+      if (rsi.value < 30) rsiNote = '(oversold - bullish)';
+      else if (rsi.value > 70) rsiNote = '(overbought - bearish)';
+      else if (rsi.value > 50) rsiNote = '(bullish)';
+      else if (rsi.value < 50) rsiNote = '(bearish)';
+      reasoning.push(`• RSI(14): ${rsi.value.toFixed(1)} ${rsiNote}`);
     }
+
+    // ADX for trend strength
+    if (indicatorResults.adx) {
+      const adx = indicatorResults.adx;
+      let adxNote = '';
+      if (adx.value > 40) adxNote = '(very strong trend)';
+      else if (adx.value > 25) adxNote = '(strong trend)';
+      else if (adx.value > 20) adxNote = '(trending)';
+      else adxNote = '(ranging/weak trend)';
+      reasoning.push(`• ADX: ${adx.value.toFixed(1)} ${adxNote}`);
+    }
+
+    // MACD
+    if (indicatorResults.macd) {
+      const macd = indicatorResults.macd;
+      const signal = macd.histogram > 0 ? 'bullish' : 'bearish';
+      reasoning.push(`• MACD: ${macd.histogram.toFixed(2)} (${signal})`);
+    }
+    reasoning.push('');
 
     // EMA analysis
     if (indicatorResults.ema_20) {
