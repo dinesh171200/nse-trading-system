@@ -73,6 +73,26 @@ const signalHistorySchema = new mongoose.Schema({
     processingTime: Number
   },
 
+  // Performance tracking (updated by signal-tracker)
+  performance: {
+    outcome: {
+      type: String,
+      enum: ['WIN', 'LOSS', 'PENDING'],
+      default: 'PENDING'
+    },
+    entryFilled: Boolean,
+    exitPrice: Number,
+    exitTime: Date,
+    targetHit: {
+      type: String,
+      enum: ['TARGET1', 'TARGET2', 'TARGET3', 'STOPLOSS', 'NONE'],
+      default: 'NONE'
+    },
+    profitLoss: Number,
+    profitLossPercent: Number,
+    remarks: String
+  },
+
   // Created timestamp
   createdAt: {
     type: Date,

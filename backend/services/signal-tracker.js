@@ -4,7 +4,8 @@
  */
 
 const TradingSignal = require('../models/TradingSignal');
-const TickData = require('../models/TickData');
+const SignalHistory = require('../models/SignalHistory');
+const dataFetcher = require('./simple-data-fetcher');
 
 class SignalTracker {
   constructor() {
@@ -56,15 +57,12 @@ class SignalTracker {
    */
   async checkSignalStatus(signal) {
     try {
-      // Get latest tick data for this symbol
-      const latestTick = await TickData.findOne({
-        symbol: signal.symbol,
-        timestamp: { $gte: signal.timestamp }
-      }).sort({ timestamp: -1 }).limit(1);
+      // Get latest price from API (same as signal generator uses)
+      const candles = await dataFetcher.fetch(signal.symbol);
+      if (!candles || candles.length === 0) return;
 
-      if (!latestTick) return;
-
-      const currentPrice = latestTick.price;
+      const latestCandle = candles[candles.length - 1];
+      const currentPrice = latestCandle.ohlc.close;
       const isBuy = signal.signal.action.includes('BUY');
 
       let hitLevel = null;
@@ -143,19 +141,25 @@ class SignalTracker {
           outcome,
           entryFilled: true,
           exitPrice: currentPrice,
-          exitTime: latestTick.timestamp,
+          exitTime: latestCandle.timestamp,
           targetHit: targetHitEnum,
           profitLoss,
           profitLossPercent,
-          remarks: `Hit ${hitLevel.replace('_', ' ')} at ₹${currentPrice.toFixed(2)}`
+          remarks: `Hit ${hitLevel.replace('_', ' ')} at ${this.formatPrice(currentPrice, signal.symbol)}`
         };
 
         await signal.save();
 
+        // Also update SignalHistory if it exists
+        await SignalHistory.findOneAndUpdate(
+          { symbol: signal.symbol, marketTime: signal.timestamp },
+          { $set: { performance: signal.performance } }
+        );
+
         const emoji = outcome === 'WIN' ? '✅' : '❌';
         console.log(`${emoji} ${signal.symbol} ${signal.signal.action} signal ${hitLevel}`);
-        console.log(`   Entry: ₹${signal.levels.entry.toFixed(2)} → Exit: ₹${currentPrice.toFixed(2)}`);
-        console.log(`   P/L: ${profitLoss > 0 ? '+' : ''}₹${profitLoss.toFixed(2)} (${profitLossPercent > 0 ? '+' : ''}${profitLossPercent.toFixed(2)}%)`);
+        console.log(`   Entry: ${this.formatPrice(signal.levels.entry, signal.symbol)} → Exit: ${this.formatPrice(currentPrice, signal.symbol)}`);
+        console.log(`   P/L: ${profitLoss > 0 ? '+' : ''}${this.formatPrice(Math.abs(profitLoss), signal.symbol)} (${profitLossPercent > 0 ? '+' : ''}${profitLossPercent.toFixed(2)}%)`);
 
       } else {
         // Check if signal expired (4 hours old with no hit)
@@ -178,6 +182,14 @@ class SignalTracker {
     } catch (error) {
       console.error(`Error checking signal ${signal._id}:`, error.message);
     }
+  }
+
+  /**
+   * Format price with correct currency symbol
+   */
+  formatPrice(price, symbol) {
+    const currencySymbol = symbol === 'DOWJONES' ? '$' : '₹';
+    return `${currencySymbol}${price.toFixed(2)}`;
   }
 
   /**

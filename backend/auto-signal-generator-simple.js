@@ -71,6 +71,11 @@ async function generateSignals(triggeredBy = 'schedule') {
           alerts: signal.alerts,
           marketRegime: signal.marketRegime,
           dynamicWeights: signal.dynamicWeights,
+          status: action !== 'HOLD' ? 'ACTIVE' : 'EXPIRED',  // Track entry signals
+          performance: {
+            outcome: 'PENDING',
+            targetHit: 'NONE'
+          },
           metadata: {
             candleCount: recentCandles.length,
             source: 'simple-auto-generator',

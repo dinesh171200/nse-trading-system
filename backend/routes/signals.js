@@ -232,42 +232,87 @@ router.delete('/history', async (req, res) => {
 
 /**
  * GET /api/signals/statistics
- * Get signal performance statistics
+ * Get signal performance statistics (backtesting results)
  */
 router.get('/statistics', async (req, res) => {
   try {
-    const { symbol = 'NIFTY50', days = 7 } = req.query;
+    const { symbol, days = 30 } = req.query;
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(days));
 
-    const signals = await SignalHistory.find({
-      symbol,
+    // Build query
+    const query = {
       marketTime: { $gte: startDate },
-      'signal.confidence': { $gte: 50 }
-    });
+      'signal.action': { $in: ['BUY', 'STRONG_BUY', 'SELL', 'STRONG_SELL'] }
+    };
 
-    // Calculate statistics
+    if (symbol && symbol !== 'ALL') {
+      query.symbol = symbol;
+    }
+
+    const signals = await SignalHistory.find(query).sort({ marketTime: -1 });
+
+    // Separate by outcome
+    const completed = signals.filter(s => s.performance?.outcome && s.performance.outcome !== 'PENDING');
+    const wins = completed.filter(s => s.performance.outcome === 'WIN');
+    const losses = completed.filter(s => s.performance.outcome === 'LOSS');
+    const pending = signals.filter(s => !s.performance?.outcome || s.performance.outcome === 'PENDING');
+
+    // Calculate P/L
+    const totalPL = completed.reduce((sum, s) => sum + (s.performance?.profitLoss || 0), 0);
+    const totalPLPercent = completed.reduce((sum, s) => sum + (s.performance?.profitLossPercent || 0), 0);
+    const avgPL = completed.length > 0 ? totalPL / completed.length : 0;
+    const avgPLPercent = completed.length > 0 ? totalPLPercent / completed.length : 0;
+
+    // Target breakdown
+    const target1Hits = wins.filter(s => s.performance?.targetHit === 'TARGET1').length;
+    const target2Hits = wins.filter(s => s.performance?.targetHit === 'TARGET2').length;
+    const target3Hits = wins.filter(s => s.performance?.targetHit === 'TARGET3').length;
+
     const stats = {
       totalSignals: signals.length,
-      buySignals: signals.filter(s => s.signal?.action?.includes('BUY')).length,
-      sellSignals: signals.filter(s => s.signal?.action?.includes('SELL')).length,
-      avgConfidence: signals.length > 0
-        ? (signals.reduce((sum, s) => sum + (s.signal?.confidence || 0), 0) / signals.length).toFixed(1)
-        : 0,
-      highConfidence: signals.filter(s => (s.signal?.confidence || 0) >= 70).length,
-      mediumConfidence: signals.filter(s => {
-        const conf = s.signal?.confidence || 0;
-        return conf >= 50 && conf < 70;
-      }).length,
-      avgRiskReward: signals.length > 0
-        ? (signals.reduce((sum, s) => sum + (s.levels?.riskRewardRatio || 0), 0) / signals.length).toFixed(2)
-        : 0,
+      completed: completed.length,
+      pending: pending.length,
+      wins: wins.length,
+      losses: losses.length,
+      winRate: completed.length > 0 ? ((wins.length / completed.length) * 100).toFixed(2) : 0,
+      lossRate: completed.length > 0 ? ((losses.length / completed.length) * 100).toFixed(2) : 0,
+      totalPL: totalPL.toFixed(2),
+      totalPLPercent: totalPLPercent.toFixed(2),
+      avgPL: avgPL.toFixed(2),
+      avgPLPercent: avgPLPercent.toFixed(2),
+      avgWin: wins.length > 0 ? (wins.reduce((sum, s) => sum + (s.performance?.profitLossPercent || 0), 0) / wins.length).toFixed(2) : 0,
+      avgLoss: losses.length > 0 ? (losses.reduce((sum, s) => sum + (s.performance?.profitLossPercent || 0), 0) / losses.length).toFixed(2) : 0,
+      targetBreakdown: {
+        target1: target1Hits,
+        target2: target2Hits,
+        target3: target3Hits,
+        stopLoss: losses.length
+      },
+      byAction: {
+        buy: signals.filter(s => s.signal?.action?.includes('BUY')).length,
+        sell: signals.filter(s => s.signal?.action?.includes('SELL')).length
+      },
+      bySymbol: symbol === 'ALL' || !symbol ? {
+        NIFTY50: signals.filter(s => s.symbol === 'NIFTY50').length,
+        BANKNIFTY: signals.filter(s => s.symbol === 'BANKNIFTY').length,
+        DOWJONES: signals.filter(s => s.symbol === 'DOWJONES').length
+      } : null,
       period: {
         days: parseInt(days),
         from: startDate,
         to: new Date()
-      }
+      },
+      recentSignals: signals.slice(0, 10).map(s => ({
+        symbol: s.symbol,
+        action: s.signal.action,
+        confidence: s.signal.confidence,
+        price: s.price,
+        time: s.marketTime,
+        outcome: s.performance?.outcome || 'PENDING',
+        profitLossPercent: s.performance?.profitLossPercent?.toFixed(2) || 'N/A'
+      }))
     };
 
     res.json({
