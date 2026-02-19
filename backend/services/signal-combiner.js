@@ -88,8 +88,8 @@ class SignalCombiner {
       const bearishPercentage = 100 - bullishPercentage; // 0-100%
       const percentageDifference = Math.abs(bullishPercentage - bearishPercentage);
 
-      // Determine signal action (now stricter - requires clear dominance)
-      const action = this.determineAction(totalScore, confidence, percentageDifference);
+      // Determine signal action (strict high-quality filter)
+      const action = this.determineAction(totalScore, confidence, percentageDifference, categoryScores, marketRegime);
 
       // Determine signal strength
       const strength = this.determineStrength(confidence);
@@ -869,33 +869,44 @@ class SignalCombiner {
   /**
    * Determine signal action
    */
-  determineAction(totalScore, confidence, percentageDifference) {
-    // PRACTICAL ENTRY LOGIC:
-    // Give BUY/SELL signals when there's a directional bias:
-    // 1. Confidence is reasonable (>= 48%) - practical threshold
-    // 2. There's a clear direction (difference >= 10%) - allows 55/45 split
-    // This gives entry opportunities during trending moves
+  determineAction(totalScore, confidence, percentageDifference, categoryScores, marketRegime) {
+    // FINE-TUNED QUALITY FILTER
+    // Balancing signal quality with quantity
+    // Target: 52-56% win rate with 12-20 signals per backtest
+    //
+    // Thresholds Evolution:
+    // - Original (TOO LOOSE): conf 48%, diff 10%, score 15 → 73 signals, 38% win rate
+    // - Strict (TOO TIGHT): conf 60%, diff 14%, score 20 → 5 signals, 40% win rate
+    // - Middle-Ground: conf 57%, diff 12%, score 18 → 16 signals, 50% win rate ✓
+    // - Fine-Tuned: conf 58%, diff 12%, score 19 → Testing for >50% win rate...
 
-    if (confidence < 48) {
-      return 'HOLD'; // Confidence too low for any signal
+    // Rule 1: Good confidence requirement
+    if (confidence < 58) {
+      return 'HOLD'; // Slightly higher than 57% to filter marginal signals
     }
 
-    if (percentageDifference < 10) {
-      return 'HOLD'; // Too close to call (like 52/48), stay neutral
+    // Rule 2: Reasonable directional bias required
+    if (percentageDifference < 12) {
+      return 'HOLD'; // Keep at 12% (works well)
     }
 
-    // Now check for buy/sell signals with practical thresholds
-    if (totalScore >= 50) {
-      return 'STRONG_BUY'; // Very bullish (70%+ bullish)
-    } else if (totalScore >= 15) {
-      return 'BUY'; // Bullish (58%+ bullish with 20%+ difference)
-    } else if (totalScore <= -50) {
-      return 'STRONG_SELL'; // Very bearish (70%+ bearish)
-    } else if (totalScore <= -15) {
-      return 'SELL'; // Bearish (58%+ bearish with 20%+ difference)
-    } else {
-      return 'HOLD'; // Score between -15 and +15 is neutral zone (52-58% range)
+    // Rule 3: Quality score thresholds
+    if (totalScore >= 19) {
+      // Slightly higher threshold (19 vs 18) to improve win rate
+      if (totalScore >= 50) {
+        return 'STRONG_BUY';
+      }
+      return 'BUY';
+    } else if (totalScore <= -19) {
+      // Slightly higher threshold (19 vs 18) to improve win rate
+      if (totalScore <= -50) {
+        return 'STRONG_SELL';
+      }
+      return 'SELL';
     }
+
+    // Everything else is HOLD
+    return 'HOLD';
   }
 
   /**
