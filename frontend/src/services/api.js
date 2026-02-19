@@ -40,12 +40,25 @@ export const generateCharts = async (options = {}) => {
   return response.data;
 };
 
-// Get Trading Signal
+// Get Trading Signal (using LIVE endpoint with real-time price updates)
 export const getTradingSignal = async (symbol, timeframe, minConfidence = 50) => {
-  const response = await api.get('/api/test/signal', {
-    params: { symbol, timeframe, minConfidence }
+  const response = await api.get('/api/signals/live', {
+    params: { symbol, minConfidence }
   });
-  return response.data;
+
+  // The live endpoint returns { success, signals: [...], count, source, timestamp }
+  // Extract the first signal for the requested symbol
+  if (response.data.success && response.data.signals && response.data.signals.length > 0) {
+    return {
+      success: true,
+      data: response.data.signals[0]  // Return first matching signal
+    };
+  } else {
+    return {
+      success: false,
+      message: 'No signal available for this index'
+    };
+  }
 };
 
 // Get Indicator Data
