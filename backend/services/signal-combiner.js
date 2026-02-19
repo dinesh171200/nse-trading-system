@@ -171,6 +171,10 @@ class SignalCombiner {
       return signal;
 
     } catch (error) {
+      console.error('Signal generation error details:', {
+        message: error.message,
+        stack: error.stack
+      });
       throw new Error(`Signal generation failed: ${error.message}`);
     }
   }
@@ -1070,7 +1074,7 @@ class SignalCombiner {
     reasoning.push('🔍 Key Indicators:');
 
     // RSI
-    if (indicatorResults.rsi_14) {
+    if (indicatorResults.rsi_14 && indicatorResults.rsi_14.value !== undefined) {
       const rsi = indicatorResults.rsi_14;
       let rsiNote = '';
       if (rsi.value < 30) rsiNote = '(oversold - bullish)';
@@ -1081,7 +1085,7 @@ class SignalCombiner {
     }
 
     // ADX for trend strength
-    if (indicatorResults.adx) {
+    if (indicatorResults.adx && indicatorResults.adx.value !== undefined) {
       const adx = indicatorResults.adx;
       let adxNote = '';
       if (adx.value > 40) adxNote = '(very strong trend)';
@@ -1092,7 +1096,7 @@ class SignalCombiner {
     }
 
     // MACD
-    if (indicatorResults.macd) {
+    if (indicatorResults.macd && indicatorResults.macd.histogram !== undefined) {
       const macd = indicatorResults.macd;
       const signal = macd.histogram > 0 ? 'bullish' : 'bearish';
       reasoning.push(`• MACD: ${macd.histogram.toFixed(2)} (${signal})`);
@@ -1100,7 +1104,7 @@ class SignalCombiner {
     reasoning.push('');
 
     // EMA analysis
-    if (indicatorResults.ema_20) {
+    if (indicatorResults.ema_20 && indicatorResults.ema_20.distancePercent !== undefined) {
       const ema = indicatorResults.ema_20;
       if (ema.position === 'ABOVE') {
         reasoning.push(`Price trading ${ema.distancePercent.toFixed(1)}% above EMA-20 (bullish)`);

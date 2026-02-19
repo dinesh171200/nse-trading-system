@@ -4,7 +4,7 @@ const tradingSignalSchema = new mongoose.Schema({
   symbol: {
     type: String,
     required: true,
-    enum: ['NIFTY50', 'BANKNIFTY']
+    enum: ['NIFTY50', 'BANKNIFTY', 'DOWJONES']
   },
   timestamp: {
     type: Date,
