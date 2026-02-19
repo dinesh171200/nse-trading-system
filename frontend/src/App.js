@@ -6,6 +6,7 @@ import SignalCard from './components/Signals/SignalCard';
 import MoneyControlChart from './components/LiveChart/MoneyControlChart';
 import SignalDetail from './pages/SignalDetail';
 import SignalHistoryPage from './pages/SignalHistoryPage';
+import BacktestingStats from './pages/BacktestingStats';
 import DetailedChart from './pages/DetailedChart';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useMarketStatus } from './hooks/useLiveData';
@@ -90,13 +91,21 @@ function Dashboard() {
                 </div>
               )}
 
-              {/* View History Button */}
-              <button
-                className="view-history-btn"
-                onClick={() => navigate('/history')}
-              >
-                📜 View Signal History
-              </button>
+              {/* Action Buttons */}
+              <div className="action-buttons">
+                <button
+                  className="view-history-btn"
+                  onClick={() => navigate('/history')}
+                >
+                  📜 Signal History
+                </button>
+                <button
+                  className="view-stats-btn"
+                  onClick={() => navigate('/backtesting')}
+                >
+                  📊 Backtesting
+                </button>
+              </div>
             </div>
           </div>
 
@@ -149,6 +158,7 @@ function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/detailed" element={<DetailedChart />} />
         <Route path="/history" element={<SignalHistoryPage />} />
+        <Route path="/backtesting" element={<BacktestingStats />} />
         <Route path="/signal/:id" element={<SignalDetail />} />
       </Routes>
     </Router>
