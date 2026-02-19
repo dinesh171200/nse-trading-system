@@ -13,6 +13,7 @@ const SignalHistoryPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // all, buy, sell
+  const [symbolFilter, setSymbolFilter] = useState('all'); // all, NIFTY50, BANKNIFTY, DOWJONES
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -87,8 +88,10 @@ const SignalHistoryPage = () => {
     });
   };
 
-  const formatPrice = (price) => {
-    return price ? `₹${price.toFixed(2)}` : 'N/A';
+  const formatPrice = (price, symbol) => {
+    if (!price) return 'N/A';
+    const currencySymbol = symbol === 'DOWJONES' ? '$' : '₹';
+    return `${currencySymbol}${price.toFixed(2)}`;
   };
 
   const getActionColor = (action) => {
@@ -105,10 +108,16 @@ const SignalHistoryPage = () => {
   };
 
   const filteredHistory = history.filter(item => {
-    if (filter === 'all') return true;
-    if (filter === 'buy') return item.signal?.action?.includes('BUY');
-    if (filter === 'sell') return item.signal?.action?.includes('SELL');
-    return true;
+    // Filter by action
+    let matchesAction = true;
+    if (filter === 'buy') matchesAction = item.signal?.action?.includes('BUY');
+    if (filter === 'sell') matchesAction = item.signal?.action?.includes('SELL');
+
+    // Filter by symbol
+    let matchesSymbol = true;
+    if (symbolFilter !== 'all') matchesSymbol = item.symbol === symbolFilter;
+
+    return matchesAction && matchesSymbol;
   });
 
   if (loading) {
@@ -155,26 +164,60 @@ const SignalHistoryPage = () => {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Symbol Filters */}
       <div className="history-filters">
-        <button
-          className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-          onClick={() => setFilter('all')}
-        >
-          All Signals ({history.length})
-        </button>
-        <button
-          className={`filter-btn ${filter === 'buy' ? 'active' : ''}`}
-          onClick={() => setFilter('buy')}
-        >
-          🟢 Buy Signals ({history.filter(s => s.signal?.action?.includes('BUY')).length})
-        </button>
-        <button
-          className={`filter-btn ${filter === 'sell' ? 'active' : ''}`}
-          onClick={() => setFilter('sell')}
-        >
-          🔴 Sell Signals ({history.filter(s => s.signal?.action?.includes('SELL')).length})
-        </button>
+        <div className="filter-group">
+          <label className="filter-label">Index:</label>
+          <button
+            className={`filter-btn ${symbolFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setSymbolFilter('all')}
+          >
+            All ({history.length})
+          </button>
+          <button
+            className={`filter-btn ${symbolFilter === 'NIFTY50' ? 'active' : ''}`}
+            onClick={() => setSymbolFilter('NIFTY50')}
+          >
+            Nifty 50 ({history.filter(s => s.symbol === 'NIFTY50').length})
+          </button>
+          <button
+            className={`filter-btn ${symbolFilter === 'BANKNIFTY' ? 'active' : ''}`}
+            onClick={() => setSymbolFilter('BANKNIFTY')}
+          >
+            Bank Nifty ({history.filter(s => s.symbol === 'BANKNIFTY').length})
+          </button>
+          <button
+            className={`filter-btn ${symbolFilter === 'DOWJONES' ? 'active' : ''}`}
+            onClick={() => setSymbolFilter('DOWJONES')}
+          >
+            Dow Jones ({history.filter(s => s.symbol === 'DOWJONES').length})
+          </button>
+        </div>
+      </div>
+
+      {/* Action Filters */}
+      <div className="history-filters">
+        <div className="filter-group">
+          <label className="filter-label">Action:</label>
+          <button
+            className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
+            onClick={() => setFilter('all')}
+          >
+            All Signals
+          </button>
+          <button
+            className={`filter-btn ${filter === 'buy' ? 'active' : ''}`}
+            onClick={() => setFilter('buy')}
+          >
+            🟢 Buy Only
+          </button>
+          <button
+            className={`filter-btn ${filter === 'sell' ? 'active' : ''}`}
+            onClick={() => setFilter('sell')}
+          >
+            🔴 Sell Only
+          </button>
+        </div>
       </div>
 
       {/* Signals Grid */}
@@ -208,7 +251,7 @@ const SignalHistoryPage = () => {
                 <div className="card-body">
                   <div className="price-info">
                     <span className="price-label">Price</span>
-                    <span className="price-value">{formatPrice(item.price)}</span>
+                    <span className="price-value">{formatPrice(item.price, item.symbol)}</span>
                   </div>
 
                   <div className="meta-row">
