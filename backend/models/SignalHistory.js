@@ -10,7 +10,7 @@ const signalHistorySchema = new mongoose.Schema({
   symbol: {
     type: String,
     required: true,
-    enum: ['NIFTY50', 'BANKNIFTY']
+    enum: ['NIFTY50', 'BANKNIFTY', 'DOWJONES']
   },
 
   // Timeframe

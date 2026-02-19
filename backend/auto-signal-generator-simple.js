@@ -7,6 +7,7 @@
 require('dotenv').config();
 const connectDB = require('./config/database');
 const TradingSignal = require('./models/TradingSignal');
+const SignalHistory = require('./models/SignalHistory');
 const signalCombiner = require('./services/signal-combiner');
 const dataFetcher = require('./services/simple-data-fetcher');
 const cron = require('node-cron');
@@ -56,7 +57,7 @@ async function generateSignals(triggeredBy = 'schedule') {
         console.log(`  ${action} - ${confidence.toFixed(1)}% confidence`);
         console.log(`  📈 Bullish: ${bullish}% | 📉 Bearish: ${bearish}%`);
 
-        // Save signal to database (ONLY the signal, not the raw data)
+        // Save to TradingSignal (for live display - latest signal)
         const signalDoc = new TradingSignal({
           symbol,
           timeframe: '5m',
@@ -78,6 +79,30 @@ async function generateSignals(triggeredBy = 'schedule') {
         });
 
         await signalDoc.save();
+
+        // ALSO save to SignalHistory (for historical tracking - ALL signals)
+        const historyDoc = new SignalHistory({
+          symbol,
+          timeframe: '5m',
+          marketTime: new Date(),
+          signal: {
+            action: signal.signal.action,
+            strength: signal.signal.strength,
+            confidence: signal.signal.confidence,
+            confidenceLevel: signal.signal.confidenceLevel
+          },
+          price: signal.currentPrice,
+          levels: signal.levels,
+          scoring: signal.scoring,
+          reasoning: signal.reasoning,
+          metadata: {
+            candlesAnalyzed: recentCandles.length,
+            indicatorsUsed: Object.keys(signal.indicators || {}).length,
+            processingTime: 0
+          }
+        });
+
+        await historyDoc.save();
 
         if (action !== 'HOLD') {
           console.log(`  ✅ ${action} @ $${signal.currentPrice.toFixed(2)}`);
