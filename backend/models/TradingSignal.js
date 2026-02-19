@@ -34,6 +34,21 @@ const tradingSignalSchema = new mongoose.Schema({
     confidenceLevel: {
       type: String,
       enum: ['HIGH', 'MEDIUM', 'LOW']
+    },
+    bullishPercentage: {
+      type: Number,
+      min: 0,
+      max: 100
+    },
+    bearishPercentage: {
+      type: Number,
+      min: 0,
+      max: 100
+    },
+    percentageDifference: {
+      type: Number,
+      min: 0,
+      max: 100
     }
   },
   levels: {
