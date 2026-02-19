@@ -11,6 +11,16 @@ const SignalCard = ({ signal }) => {
     );
   }
 
+  // Get currency symbol based on index
+  const getCurrencySymbol = (symbol) => {
+    if (symbol === 'DOWJONES') {
+      return '$'; // US Dollar for Dow Jones
+    }
+    return '{currency}'; // Indian Rupee for Nifty/Bank Nifty
+  };
+
+  const currency = getCurrencySymbol(signal.symbol);
+
   const getActionColor = (action) => {
     switch (action) {
       case 'STRONG_BUY':
@@ -84,22 +94,22 @@ const SignalCard = ({ signal }) => {
       <div className="signal-details">
         <div className="detail-row">
           <span className="detail-label">Current Price:</span>
-          <span className="detail-value">₹{signal.currentPrice.toFixed(2)}</span>
+          <span className="detail-value">{currency}{signal.currentPrice.toFixed(2)}</span>
         </div>
 
         {signal.signal.action !== 'HOLD' && (
           <>
             <div className="detail-row">
               <span className="detail-label">Entry:</span>
-              <span className="detail-value entry">₹{signal.levels.entry.toFixed(2)}</span>
+              <span className="detail-value entry">{currency}{signal.levels.entry.toFixed(2)}</span>
             </div>
             <div className="detail-row">
               <span className="detail-label">Stop Loss:</span>
-              <span className="detail-value stop-loss">₹{signal.levels.stopLoss.toFixed(2)}</span>
+              <span className="detail-value stop-loss">{currency}{signal.levels.stopLoss.toFixed(2)}</span>
             </div>
             <div className="detail-row">
               <span className="detail-label">Target 1:</span>
-              <span className="detail-value target">₹{signal.levels.target1.toFixed(2)}</span>
+              <span className="detail-value target">{currency}{signal.levels.target1.toFixed(2)}</span>
             </div>
             <div className="detail-row">
               <span className="detail-label">R/R Ratio:</span>
@@ -127,12 +137,12 @@ const SignalCard = ({ signal }) => {
             </div>
             <div className="performance-item">
               <span className="performance-label">Exit Price:</span>
-              <span className="performance-value">₹{signal.performance.exitPrice?.toFixed(2) || 'N/A'}</span>
+              <span className="performance-value">{currency}{signal.performance.exitPrice?.toFixed(2) || 'N/A'}</span>
             </div>
             <div className="performance-item">
               <span className="performance-label">P/L:</span>
               <span className={`performance-value ${signal.performance.profitLoss >= 0 ? 'profit' : 'loss'}`}>
-                {signal.performance.profitLoss >= 0 ? '+' : ''}₹{signal.performance.profitLoss?.toFixed(2) || 'N/A'}
+                {signal.performance.profitLoss >= 0 ? '+' : ''}{currency}{signal.performance.profitLoss?.toFixed(2) || 'N/A'}
                 {signal.performance.profitLossPercent && (
                   <> ({signal.performance.profitLossPercent >= 0 ? '+' : ''}{signal.performance.profitLossPercent.toFixed(2)}%)</>
                 )}
