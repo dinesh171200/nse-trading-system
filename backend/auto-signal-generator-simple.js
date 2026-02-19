@@ -107,17 +107,17 @@ async function start() {
   console.log('═══════════════════════════════════════════════════\n');
   console.log('✓ Symbols: Nifty 50, Bank Nifty, Dow Jones');
   console.log('✓ Data Source: MoneyControl & Investing.com (same as frontend)');
-  console.log('✓ Update: Every 3 minutes');
+  console.log('✓ Update: Every 1 minute (real-time signals)');
   console.log('✓ No MongoDB data storage - fetch fresh every time');
   console.log('✓ Press Ctrl+C to stop\n');
 
   // Generate immediately
   await generateSignals('initial');
 
-  // Schedule every 3 minutes
-  cron.schedule('*/3 * * * *', () => generateSignals('3-minute schedule'));
+  // Schedule every 1 minute for real-time updates
+  cron.schedule('*/1 * * * *', () => generateSignals('1-minute schedule'));
 
-  console.log('✓ Scheduler started - signals every 3 minutes');
+  console.log('✓ Scheduler started - signals every 1 minute');
 }
 
 start().catch(console.error);

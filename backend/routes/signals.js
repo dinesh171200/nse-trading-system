@@ -27,13 +27,40 @@ router.get('/live', async (req, res) => {
       query.symbol = symbol;
     }
 
-    // Get latest signals (within last 3 minutes - signals refresh every 3 minutes)
-    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
-    query.timestamp = { $gte: threeMinutesAgo };
+    // Get latest signals (within last 2 minutes - signals refresh every 1 minute)
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    query.timestamp = { $gte: twoMinutesAgo };
 
     const signals = await TradingSignal.find(query)
       .sort({ timestamp: -1 })
       .limit(10);
+
+    // Update currentPrice to latest for each signal (reduces delay)
+    if (signals.length > 0) {
+      const dataFetcher = require('../services/simple-data-fetcher');
+      for (let i = 0; i < signals.length; i++) {
+        try {
+          const latestCandles = await dataFetcher.fetch(signals[i].symbol);
+          if (latestCandles && latestCandles.length > 0) {
+            const latestCandle = latestCandles[latestCandles.length - 1];
+            if (latestCandle && latestCandle.ohlc && latestCandle.ohlc.close) {
+              // Update price in the document
+              signals[i].currentPrice = latestCandle.ohlc.close;
+
+              // Ensure metadata exists and update timestamp
+              if (!signals[i].metadata) {
+                signals[i].metadata = {};
+              }
+              signals[i].metadata.priceUpdatedAt = new Date().toISOString();
+              signals[i].metadata.priceSource = 'real-time-fetch';
+            }
+          }
+        } catch (error) {
+          // If price update fails, just use stored price
+          console.log(`Could not update price for ${signals[i].symbol}:`, error.message);
+        }
+      }
+    }
 
     if (signals.length === 0) {
       // Fallback: Try to generate signal on-the-fly
