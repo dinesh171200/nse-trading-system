@@ -870,18 +870,18 @@ class SignalCombiner {
    * Determine signal action
    */
   determineAction(totalScore, confidence, percentageDifference) {
-    // BALANCED CONFIRMATION LOGIC:
-    // Give BUY/SELL signals when:
-    // 1. Confidence is reasonable (>= 58%)
-    // 2. There's a clear direction (difference >= 20%)
-    // This ensures signals on trending days while filtering noise
+    // PRACTICAL ENTRY LOGIC:
+    // Give BUY/SELL signals when there's a directional bias:
+    // 1. Confidence is reasonable (>= 48%) - practical threshold
+    // 2. There's a clear direction (difference >= 10%) - allows 55/45 split
+    // This gives entry opportunities during trending moves
 
-    if (confidence < 58) {
+    if (confidence < 48) {
       return 'HOLD'; // Confidence too low for any signal
     }
 
-    if (percentageDifference < 20) {
-      return 'HOLD'; // Too close to call (like 55/45), stay neutral
+    if (percentageDifference < 10) {
+      return 'HOLD'; // Too close to call (like 52/48), stay neutral
     }
 
     // Now check for buy/sell signals with practical thresholds

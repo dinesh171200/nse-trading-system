@@ -80,29 +80,33 @@ async function generateSignals(triggeredBy = 'schedule') {
 
         await signalDoc.save();
 
-        // ALSO save to SignalHistory (for historical tracking - ALL signals)
-        const historyDoc = new SignalHistory({
-          symbol,
-          timeframe: '5m',
-          marketTime: new Date(),
-          signal: {
-            action: signal.signal.action,
-            strength: signal.signal.strength,
-            confidence: signal.signal.confidence,
-            confidenceLevel: signal.signal.confidenceLevel
-          },
-          price: signal.currentPrice,
-          levels: signal.levels,
-          scoring: signal.scoring,
-          reasoning: signal.reasoning,
-          metadata: {
-            candlesAnalyzed: recentCandles.length,
-            indicatorsUsed: Object.keys(signal.indicators || {}).length,
-            processingTime: 0
-          }
-        });
+        // ONLY save confirmed entry signals to SignalHistory (not HOLD)
+        // This keeps history clean with actual entry opportunities
+        if (action !== 'HOLD') {
+          const historyDoc = new SignalHistory({
+            symbol,
+            timeframe: '5m',
+            marketTime: new Date(),
+            signal: {
+              action: signal.signal.action,
+              strength: signal.signal.strength,
+              confidence: signal.signal.confidence,
+              confidenceLevel: signal.signal.confidenceLevel
+            },
+            price: signal.currentPrice,
+            levels: signal.levels,
+            scoring: signal.scoring,
+            reasoning: signal.reasoning,
+            metadata: {
+              candlesAnalyzed: recentCandles.length,
+              indicatorsUsed: Object.keys(signal.indicators || {}).length,
+              processingTime: 0
+            }
+          });
 
-        await historyDoc.save();
+          await historyDoc.save();
+          console.log(`  💾 Saved to history: ${action} @ ${signal.currentPrice.toFixed(2)}`);
+        }
 
         if (action !== 'HOLD') {
           console.log(`  ✅ ${action} @ $${signal.currentPrice.toFixed(2)}`);
