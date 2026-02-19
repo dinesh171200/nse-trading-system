@@ -48,6 +48,7 @@ app.use('/api/replay', require('./routes/replay'));
 app.use('/api/signals', require('./routes/signals'));
 app.use('/api/signals-test', require('./routes/signals-test'));
 app.use('/api/history', require('./routes/history'));
+app.use('/api/investing', require('./routes/investing'));
 
 // TODO: Import and use other routes
 // app.use('/api/options', require('./routes/options'));
@@ -117,37 +118,41 @@ server.listen(PORT, () => {
 });
 
 /**
- * Start background data collection and signal generation agents
+ * Start background signal generation (SIMPLIFIED ARCHITECTURE)
+ *
+ * OLD APPROACH (removed):
+ * - Data Agent: Fetched from Yahoo Finance every 1 minute → MongoDB TickData
+ * - Chart Generator: Converted TickData → ChartData every 1 minute
+ * - Signal Generator: Read ChartData → Generate signals every 3 minutes
+ *
+ * NEW APPROACH:
+ * - Signal Generator: Fetches fresh data from MoneyControl/Investing.com (same as frontend)
+ *   → Generates signals → Stores ONLY signals in MongoDB
+ * - No redundant data storage needed (frontend already has chart data)
  */
 function startBackgroundAgents() {
   try {
-    console.log('\n🤖 Starting background agents...');
+    console.log('\n🤖 Starting background services...');
 
-    // Start Data Agent (fetches NSE data every minute)
-    const DataAgent = require('./agents/data-agent');
-    const dataAgent = new DataAgent();
-    dataAgent.start();
-    console.log('✓ Data Agent started');
+    // REMOVED: Data Agent (no longer needed - frontend gets data directly)
+    // REMOVED: Chart Generator (no longer needed - frontend has charts)
 
-    // Start Chart Generator (generates OHLC charts every minute)
-    require('./auto-chart-generator');
-    console.log('✓ Chart Generator started');
-
-    // Start Signal Generator (generates trading signals every minute)
-    require('./auto-signal-generator');
-    console.log('✓ Signal Generator started');
+    // Start SIMPLIFIED Signal Generator (fetches data on-demand, generates signals every 3 minutes)
+    require('./auto-signal-generator-simple');
+    console.log('✓ Simplified Signal Generator started');
 
     // Start Signal Tracker (monitors active signals)
     const signalTracker = require('./services/signal-tracker');
     if (signalTracker && signalTracker.startTracking) {
       signalTracker.startTracking();
+      console.log('✓ Signal Performance Tracker started');
       console.log('✓ Signal Tracker started');
     }
 
-    console.log('✅ All background agents are running\n');
+    console.log('✅ All background services are running\n');
   } catch (error) {
-    console.error('⚠️  Error starting background agents:', error.message);
-    console.log('💡 Agents will need to be started manually if required');
+    console.error('⚠️  Error starting background services:', error.message);
+    console.log('💡 Services will need to be started manually if required');
   }
 }
 

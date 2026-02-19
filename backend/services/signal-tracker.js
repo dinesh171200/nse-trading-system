@@ -131,18 +131,24 @@ class SignalTracker {
       // Update signal if target/SL was hit
       if (hitLevel) {
         signal.status = hitLevel === 'STOP_LOSS' ? 'HIT_SL' : 'HIT_TARGET';
+
+        // Map hit level to target hit enum
+        let targetHitEnum = 'NONE';
+        if (hitLevel === 'STOP_LOSS') targetHitEnum = 'STOPLOSS';
+        else if (hitLevel === 'TARGET_1') targetHitEnum = 'TARGET1';
+        else if (hitLevel === 'TARGET_2') targetHitEnum = 'TARGET2';
+        else if (hitLevel === 'TARGET_3') targetHitEnum = 'TARGET3';
+
         signal.performance = {
           outcome,
           entryFilled: true,
           exitPrice: currentPrice,
+          exitTime: latestTick.timestamp,
+          targetHit: targetHitEnum,
           profitLoss,
           profitLossPercent,
-          hitLevel
+          remarks: `Hit ${hitLevel.replace('_', ' ')} at ₹${currentPrice.toFixed(2)}`
         };
-
-        // Store exit time in metadata
-        if (!signal.metadata) signal.metadata = {};
-        signal.metadata.exitTime = latestTick.timestamp;
 
         await signal.save();
 
@@ -159,8 +165,10 @@ class SignalTracker {
         if (signalAge > FOUR_HOURS) {
           signal.status = 'EXPIRED';
           signal.performance = {
-            outcome: 'EXPIRED',
-            entryFilled: false
+            outcome: 'PENDING',
+            entryFilled: false,
+            targetHit: 'NONE',
+            remarks: 'Signal expired after 4 hours without hitting any level'
           };
           await signal.save();
           console.log(`⏰ ${signal.symbol} signal expired after 4 hours`);
