@@ -49,7 +49,13 @@ class SignalCombiner {
         throw new Error('No candle data provided');
       }
 
-      const currentPrice = candles[candles.length - 1].ohlc.close;
+      // Safety check - ensure last candle has valid OHLC data
+      const lastCandle = candles[candles.length - 1];
+      if (!lastCandle || !lastCandle.ohlc || typeof lastCandle.ohlc.close !== 'number') {
+        throw new Error('Invalid candle data - missing OHLC close price');
+      }
+
+      const currentPrice = lastCandle.ohlc.close;
 
       // ENHANCED: Detect market regime for dynamic weighting
       const marketRegime = marketRegimeDetector.detectMarketRegime(candles);
@@ -1017,6 +1023,9 @@ class SignalCombiner {
   generateReasoning(indicatorResults, categoryScores, action, confidence, levels, marketRegime) {
     const reasoning = [];
 
+    // Safety check - ensure confidence is a valid number
+    const safeConfidence = (typeof confidence === 'number' && !isNaN(confidence)) ? confidence : 50;
+
     // NEW: Add market regime context
     if (marketRegime && marketRegime.regime !== 'UNKNOWN') {
       reasoning.push(`📊 Market Regime: ${marketRegime.details?.interpretation || marketRegime.regime}`);
@@ -1032,15 +1041,15 @@ class SignalCombiner {
 
     // Overall signal with detailed breakdown
     if (action === 'STRONG_BUY') {
-      reasoning.push(`🚀 Strong buy signal detected with ${confidence.toFixed(0)}% confidence`);
+      reasoning.push(`🚀 Strong buy signal detected with ${safeConfidence.toFixed(0)}% confidence`);
     } else if (action === 'BUY') {
-      reasoning.push(`✅ Buy signal detected with ${confidence.toFixed(0)}% confidence`);
+      reasoning.push(`✅ Buy signal detected with ${safeConfidence.toFixed(0)}% confidence`);
     } else if (action === 'STRONG_SELL') {
-      reasoning.push(`🛑 Strong sell signal detected with ${confidence.toFixed(0)}% confidence`);
+      reasoning.push(`🛑 Strong sell signal detected with ${safeConfidence.toFixed(0)}% confidence`);
     } else if (action === 'SELL') {
-      reasoning.push(`⛔ Sell signal detected with ${confidence.toFixed(0)}% confidence`);
+      reasoning.push(`⛔ Sell signal detected with ${safeConfidence.toFixed(0)}% confidence`);
     } else {
-      reasoning.push(`⏸️ Market in ranging mode - ${confidence.toFixed(0)}% confidence`);
+      reasoning.push(`⏸️ Market in ranging mode - ${safeConfidence.toFixed(0)}% confidence`);
       reasoning.push('');
       reasoning.push('📊 Why No Entry:');
 
@@ -1052,8 +1061,8 @@ class SignalCombiner {
       if (Math.abs(categoryScores.momentum || 0) < 20) {
         reasons.push('• Momentum neutral - bulls and bears balanced');
       }
-      if (confidence < 65) {
-        reasons.push(`• Confidence ${confidence.toFixed(0)}% - need 65%+ for entry`);
+      if (safeConfidence < 65) {
+        reasons.push(`• Confidence ${safeConfidence.toFixed(0)}% - need 65%+ for entry`);
       }
 
       reasons.forEach(r => reasoning.push(r));
