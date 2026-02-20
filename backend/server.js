@@ -149,6 +149,49 @@ function startBackgroundAgents() {
       console.log('✓ Signal Tracker started');
     }
 
+    // Setup Cron Jobs for automatic signal tracking
+    const cron = require('node-cron');
+
+    // Cron Job 1: Check signals every minute during market hours
+    // Runs 9:15 AM - 3:30 PM IST, Monday-Friday
+    cron.schedule('*/1 9-15 * * 1-5', async () => {
+      const now = new Date();
+      const istTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      const hours = istTime.getHours();
+      const minutes = istTime.getMinutes();
+      const currentMinutes = hours * 60 + minutes;
+
+      // Market hours: 9:15 AM (555 min) to 3:30 PM (930 min)
+      const marketOpen = 9 * 60 + 15;
+      const marketClose = 15 * 60 + 30;
+
+      // Only run during market hours
+      if (currentMinutes >= marketOpen && currentMinutes <= marketClose) {
+        console.log(`\n⏰ [CRON] Checking active signals... (${istTime.toLocaleTimeString('en-IN')} IST)`);
+        if (signalTracker && signalTracker.checkActiveSignals) {
+          await signalTracker.checkActiveSignals();
+        }
+      }
+    }, {
+      timezone: "Asia/Kolkata"
+    });
+
+    // Cron Job 2: Process remaining signals at market close
+    // Runs at 3:31 PM IST daily (1 minute after market close)
+    cron.schedule('31 15 * * 1-5', async () => {
+      console.log(`\n🔔 [CRON] Market closed - Processing remaining signals...`);
+      if (signalTracker && signalTracker.processMarketCloseSignals) {
+        const result = await signalTracker.processMarketCloseSignals();
+        console.log(`✅ [CRON] Market close processing complete: ${result.processed} signals (${result.profits} wins, ${result.losses} losses)`);
+      }
+    }, {
+      timezone: "Asia/Kolkata"
+    });
+
+    console.log('✓ Cron jobs scheduled:');
+    console.log('  - Signal check: Every minute during market hours (9:15 AM - 3:30 PM IST)');
+    console.log('  - Market close P/L: Daily at 3:31 PM IST');
+
     console.log('✅ All background services are running\n');
   } catch (error) {
     console.error('⚠️  Error starting background services:', error.message);

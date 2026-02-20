@@ -33,22 +33,147 @@ class SignalTracker {
    */
   async checkActiveSignals() {
     try {
-      // Find all active signals
+      // Find all active signals from TradingSignal
       const activeSignals = await TradingSignal.find({
         status: 'ACTIVE',
         'signal.action': { $in: ['BUY', 'STRONG_BUY', 'SELL', 'STRONG_SELL'] }
       }).sort({ timestamp: -1 });
 
-      if (activeSignals.length === 0) return;
+      // Also check recent SignalHistory records without performance
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-      console.log(`\n🔍 Checking ${activeSignals.length} active signal(s)...`);
+      const pendingHistorySignals = await SignalHistory.find({
+        marketTime: { $gte: today },
+        'signal.action': { $in: ['BUY', 'STRONG_BUY', 'SELL', 'STRONG_SELL'] },
+        $or: [
+          { performance: { $exists: false } },
+          { 'performance.outcome': 'PENDING' }
+        ]
+      }).sort({ marketTime: -1 });
 
+      const totalSignals = activeSignals.length + pendingHistorySignals.length;
+      if (totalSignals === 0) return;
+
+      console.log(`\n🔍 Checking ${totalSignals} signal(s) (${activeSignals.length} active, ${pendingHistorySignals.length} history)...`);
+
+      // Check TradingSignal records
       for (const signal of activeSignals) {
         await this.checkSignalStatus(signal);
       }
 
+      // Check SignalHistory records
+      for (const signal of pendingHistorySignals) {
+        await this.checkHistorySignalStatus(signal);
+      }
+
     } catch (error) {
       console.error('Error checking active signals:', error.message);
+    }
+  }
+
+  /**
+   * Check SignalHistory record status
+   */
+  async checkHistorySignalStatus(signal) {
+    try {
+      // Get latest price from API
+      const candles = await dataFetcher.fetch(signal.symbol);
+      if (!candles || candles.length === 0) return;
+
+      const latestCandle = candles[candles.length - 1];
+      const currentPrice = latestCandle.ohlc.close;
+      const isBuy = signal.signal.action.includes('BUY');
+      const entryPrice = signal.levels?.entry || signal.price;
+
+      let hitLevel = null;
+      let outcome = null;
+      let profitLoss = 0;
+      let profitLossPercent = 0;
+
+      // Check if stop loss was hit
+      if (signal.levels?.stopLoss) {
+        if (isBuy && currentPrice <= signal.levels.stopLoss) {
+          hitLevel = 'STOP_LOSS';
+          outcome = 'LOSS';
+          profitLoss = signal.levels.stopLoss - entryPrice;
+          profitLossPercent = (profitLoss / entryPrice) * 100;
+        } else if (!isBuy && currentPrice >= signal.levels.stopLoss) {
+          hitLevel = 'STOP_LOSS';
+          outcome = 'LOSS';
+          profitLoss = entryPrice - signal.levels.stopLoss;
+          profitLossPercent = (profitLoss / entryPrice) * 100;
+        }
+      }
+
+      // Check if targets were hit
+      if (!hitLevel && signal.levels) {
+        if (isBuy) {
+          if (signal.levels.target3 && currentPrice >= signal.levels.target3) {
+            hitLevel = 'TARGET_3';
+            outcome = 'WIN';
+            profitLoss = signal.levels.target3 - entryPrice;
+            profitLossPercent = (profitLoss / entryPrice) * 100;
+          } else if (signal.levels.target2 && currentPrice >= signal.levels.target2) {
+            hitLevel = 'TARGET_2';
+            outcome = 'WIN';
+            profitLoss = signal.levels.target2 - entryPrice;
+            profitLossPercent = (profitLoss / entryPrice) * 100;
+          } else if (signal.levels.target1 && currentPrice >= signal.levels.target1) {
+            hitLevel = 'TARGET_1';
+            outcome = 'WIN';
+            profitLoss = signal.levels.target1 - entryPrice;
+            profitLossPercent = (profitLoss / entryPrice) * 100;
+          }
+        } else { // SELL
+          if (signal.levels.target3 && currentPrice <= signal.levels.target3) {
+            hitLevel = 'TARGET_3';
+            outcome = 'WIN';
+            profitLoss = entryPrice - signal.levels.target3;
+            profitLossPercent = (profitLoss / entryPrice) * 100;
+          } else if (signal.levels.target2 && currentPrice <= signal.levels.target2) {
+            hitLevel = 'TARGET_2';
+            outcome = 'WIN';
+            profitLoss = entryPrice - signal.levels.target2;
+            profitLossPercent = (profitLoss / entryPrice) * 100;
+          } else if (signal.levels.target1 && currentPrice <= signal.levels.target1) {
+            hitLevel = 'TARGET_1';
+            outcome = 'WIN';
+            profitLoss = entryPrice - signal.levels.target1;
+            profitLossPercent = (profitLoss / entryPrice) * 100;
+          }
+        }
+      }
+
+      // Update signal if target/SL was hit
+      if (hitLevel) {
+        let targetHitEnum = 'NONE';
+        if (hitLevel === 'STOP_LOSS') targetHitEnum = 'STOPLOSS';
+        else if (hitLevel === 'TARGET_1') targetHitEnum = 'TARGET1';
+        else if (hitLevel === 'TARGET_2') targetHitEnum = 'TARGET2';
+        else if (hitLevel === 'TARGET_3') targetHitEnum = 'TARGET3';
+
+        signal.performance = {
+          outcome,
+          entryFilled: true,
+          exitPrice: currentPrice,
+          exitTime: latestCandle.timestamp,
+          targetHit: targetHitEnum,
+          profitLoss,
+          profitLossPercent,
+          remarks: `Hit ${hitLevel.replace('_', ' ')} at ${this.formatPrice(currentPrice, signal.symbol)}`
+        };
+
+        await signal.save();
+
+        const emoji = outcome === 'WIN' ? '✅' : '❌';
+        console.log(`${emoji} ${signal.symbol} ${signal.signal.action} signal ${hitLevel}`);
+        console.log(`   Entry: ${this.formatPrice(entryPrice, signal.symbol)} → Exit: ${this.formatPrice(currentPrice, signal.symbol)}`);
+        console.log(`   P/L: ${profitLoss > 0 ? '+' : ''}${this.formatPrice(Math.abs(profitLoss), signal.symbol)} (${profitLossPercent > 0 ? '+' : ''}${profitLossPercent.toFixed(2)}%)`);
+      }
+
+    } catch (error) {
+      console.error(`Error checking history signal ${signal._id}:`, error.message);
     }
   }
 
@@ -252,6 +377,107 @@ class SignalTracker {
   formatPrice(price, symbol) {
     const currencySymbol = symbol === 'DOWJONES' ? '$' : '₹';
     return `${currencySymbol}${price.toFixed(2)}`;
+  }
+
+  /**
+   * Process all signals at market close
+   * Check remaining signals and calculate P/L based on close price
+   */
+  async processMarketCloseSignals() {
+    try {
+      console.log('\n🔔 Market closed - Processing remaining signals...\n');
+
+      // Get all signals without performance data from SignalHistory
+      const signals = await SignalHistory.find({
+        $or: [
+          { performance: { $exists: false } },
+          { 'performance.outcome': 'PENDING' },
+          { 'performance.outcome': { $exists: false } }
+        ]
+      }).sort({ marketTime: -1 });
+
+      if (signals.length === 0) {
+        console.log('✓ No signals to process at market close');
+        return { processed: 0, profits: 0, losses: 0 };
+      }
+
+      console.log(`📊 Processing ${signals.length} signals at market close...`);
+
+      let processed = 0;
+      let profits = 0;
+      let losses = 0;
+
+      for (const signal of signals) {
+        try {
+          // Fetch latest price data
+          const candles = await dataFetcher.fetch(signal.symbol);
+          if (!candles || candles.length === 0) continue;
+
+          const latestCandle = candles[candles.length - 1];
+          const closePrice = latestCandle.ohlc.close;
+          const entryPrice = signal.levels?.entry || signal.price;
+
+          if (!entryPrice) continue;
+
+          // Determine if BUY or SELL
+          const isBuy = signal.signal?.action?.includes('BUY');
+
+          // Calculate P/L
+          let priceDiff, wasProfit;
+          if (isBuy) {
+            priceDiff = closePrice - entryPrice;
+            wasProfit = priceDiff > 0;
+          } else {
+            priceDiff = entryPrice - closePrice;
+            wasProfit = priceDiff > 0;
+          }
+
+          const profitLossPercent = (priceDiff / entryPrice) * 100;
+
+          // Update signal performance
+          signal.performance = {
+            outcome: wasProfit ? 'WIN' : 'LOSS',
+            entryFilled: true,
+            exitPrice: closePrice,
+            exitTime: latestCandle.timestamp,
+            targetHit: 'MARKET_CLOSE',
+            profitLoss: priceDiff,
+            profitLossPercent,
+            remarks: wasProfit
+              ? '✓ Market closed in profit (Target not hit)'
+              : '✗ Market closed in loss (Stop loss not hit)'
+          };
+
+          await signal.save();
+          processed++;
+
+          if (wasProfit) {
+            profits++;
+            console.log(`✅ ${signal.symbol} ${signal.signal.action}: +${this.formatPrice(Math.abs(priceDiff), signal.symbol)} (${profitLossPercent >= 0 ? '+' : ''}${profitLossPercent.toFixed(2)}%)`);
+          } else {
+            losses++;
+            console.log(`❌ ${signal.symbol} ${signal.signal.action}: ${this.formatPrice(Math.abs(priceDiff), signal.symbol)} (${profitLossPercent.toFixed(2)}%)`);
+          }
+
+        } catch (error) {
+          console.error(`Error processing signal ${signal._id}:`, error.message);
+        }
+      }
+
+      const winRate = processed > 0 ? ((profits / processed) * 100).toFixed(1) : 0;
+
+      console.log(`\n✅ Market close processing complete!`);
+      console.log(`   Total: ${processed} signals`);
+      console.log(`   Profits: ${profits} ✅`);
+      console.log(`   Losses: ${losses} ❌`);
+      console.log(`   Win Rate: ${winRate}%\n`);
+
+      return { processed, profits, losses, winRate };
+
+    } catch (error) {
+      console.error('Error processing market close signals:', error.message);
+      return { processed: 0, profits: 0, losses: 0 };
+    }
   }
 
   /**
