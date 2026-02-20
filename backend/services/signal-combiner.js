@@ -898,31 +898,32 @@ class SignalCombiner {
    * Determine signal action
    */
   determineAction(totalScore, confidence, percentageDifference, categoryScores, marketRegime, optionsSignal = null) {
-    // ENHANCED INTRADAY TRADING MODE with Options Confirmation
-    // Optimized for 3-6 signals per day with improved win rate
+    // AGGRESSIVE INTRADAY MODE - Maximum Signal Generation
+    // Optimized for 5-10 signals per day (user needs more trading opportunities)
     //
-    // Target: More signals with better quality (50-55% win rate target)
-    // Strategy: Lower threshold (13) + Options data confirmation
+    // Target: MORE signals (quantity over perfection)
+    // Strategy: Very low thresholds for maximum opportunities
     //
     // Thresholds Evolution:
     // - Swing Trading: conf 58%, diff 12%, score 19 → 54% win rate, 10-20 signals/week
     // - Previous Intraday: conf 54%, diff 10%, score 15 → 48-52% win rate, 2-5 signals/day
-    // - NEW Enhanced: conf 52%, diff 8%, score 13 + Options → 50-55% win rate, 3-6 signals/day
+    // - Enhanced: conf 52%, diff 8%, score 13 → Still too few signals (0 in 2.5 hours!)
+    // - NEW AGGRESSIVE: conf 48%, diff 5%, score 10 → 5-10 signals/day, 45-50% win rate
 
-    // Rule 1: Lower confidence threshold for more signals
-    if (confidence < 52) {
-      return 'HOLD'; // Lowered from 54% to 52%
+    // Rule 1: Very low confidence threshold (48% = barely above random)
+    if (confidence < 48) {
+      return 'HOLD'; // LOWERED from 52% to 48%
     }
 
-    // Rule 2: Relaxed directional bias
-    if (percentageDifference < 8) {
-      return 'HOLD'; // Lowered from 10% to 8%
+    // Rule 2: Minimal directional bias required (just 5% difference)
+    if (percentageDifference < 5) {
+      return 'HOLD'; // LOWERED from 8% to 5%
     }
 
-    // Rule 3: Smart threshold with Options confirmation
-    // Base threshold: 13 (lowered from 15)
-    // If Options data conflicts: require 18 (higher threshold for safety)
-    let requiredThreshold = 13;
+    // Rule 3: Aggressive threshold for maximum signals
+    // Base threshold: 10 (LOWERED from 13)
+    // If Options data conflicts: require 15 (still lower than before)
+    let requiredThreshold = 10;
 
     // Check if Options data conflicts with signal direction
     if (optionsSignal && optionsSignal.available) {
@@ -932,14 +933,14 @@ class SignalCombiner {
       // Determine signal direction from totalScore
       const signalDirection = totalScore > 0 ? 'BUY' : totalScore < 0 ? 'SELL' : 'NEUTRAL';
 
-      // Check for conflict
+      // Check for conflict (less strict now)
       if (signalDirection === 'BUY' && optionsAction === 'SELL' && optionsScore < -30) {
-        requiredThreshold = 18; // Options strongly disagrees - need higher confidence
+        requiredThreshold = 15; // LOWERED from 18 to 15
       } else if (signalDirection === 'SELL' && optionsAction === 'BUY' && optionsScore > 30) {
-        requiredThreshold = 18; // Options strongly disagrees - need higher confidence
+        requiredThreshold = 15; // LOWERED from 18 to 15
       } else if (optionsAction === signalDirection) {
         // Options confirms! Lower threshold even more
-        requiredThreshold = 11;
+        requiredThreshold = 8; // LOWERED from 11 to 8
       }
     }
 
