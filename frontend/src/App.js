@@ -51,6 +51,34 @@ function Dashboard() {
         <div className="main-layout">
           {/* Left Panel: Signals */}
           <div className="left-panel">
+            {/* Symbol Selector - Mobile-First at Top */}
+            <div className="symbol-selector-top">
+              <button
+                className={`symbol-btn ${selectedChart === 'NIFTY50' ? 'active' : ''}`}
+                onClick={() => setSelectedChart('NIFTY50')}
+              >
+                Nifty 50
+              </button>
+              <button
+                className={`symbol-btn ${selectedChart === 'BANKNIFTY' ? 'active' : ''}`}
+                onClick={() => setSelectedChart('BANKNIFTY')}
+              >
+                Bank Nifty
+              </button>
+              <button
+                className={`symbol-btn ${selectedChart === 'GIFTNIFTY' ? 'active' : ''}`}
+                onClick={() => setSelectedChart('GIFTNIFTY')}
+              >
+                Gift Nifty
+              </button>
+              <button
+                className={`symbol-btn ${selectedChart === 'DOWJONES' ? 'active' : ''}`}
+                onClick={() => setSelectedChart('DOWJONES')}
+              >
+                Dow Jones
+              </button>
+            </div>
+
             {/* Current Signal */}
             <div className="current-signal-section">
               <h2 className="section-title">

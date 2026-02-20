@@ -59,6 +59,52 @@ body {
   top: 20px;
 }
 
+/* Symbol Selector at Top - Mobile-First */
+.symbol-selector-top {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.symbol-btn {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.symbol-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(102, 126, 234, 0.5);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.symbol-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.symbol-btn.active:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+}
+
 .current-signal-section {
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
   border: 1px solid rgba(102, 126, 234, 0.3);
