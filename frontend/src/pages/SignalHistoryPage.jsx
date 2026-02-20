@@ -67,6 +67,31 @@ const SignalHistoryPage = () => {
     }
   };
 
+  const calculatePerformance = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/signals/calculate-performance`,
+        { method: 'POST' }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to calculate performance');
+      }
+
+      const data = await response.json();
+      alert(`✅ Performance calculated!\n\nTotal: ${data.results.total}\nProfits: ${data.results.profits} ✅\nLosses: ${data.results.losses} ❌\nWin Rate: ${data.results.winRate}`);
+
+      // Refresh history to show updated results
+      fetchHistory();
+    } catch (err) {
+      console.error('Error calculating performance:', err);
+      alert(`❌ Error: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
@@ -171,6 +196,9 @@ const SignalHistoryPage = () => {
         </button>
         <h1 className="history-title">📊 Old/Running Trades</h1>
         <div className="header-actions">
+          <button onClick={calculatePerformance} className="calculate-btn" title="Calculate Profit/Loss">
+            💰 Calculate P/L
+          </button>
           <button onClick={fetchHistory} className="refresh-btn" title="Refresh">
             🔄 Refresh
           </button>

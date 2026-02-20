@@ -371,4 +371,127 @@ router.delete('/clear-all', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/signals/calculate-performance
+ * Calculate profit/loss for all signals based on current market close price
+ */
+router.post('/calculate-performance', async (req, res) => {
+  try {
+    const dataFetcher = require('../services/simple-data-fetcher');
+
+    // Get all signals that don't have performance data
+    const signals = await SignalHistory.find({
+      $or: [
+        { performance: { $exists: false } },
+        { 'performance.outcome': 'PENDING' },
+        { 'performance.outcome': { $exists: false } }
+      ]
+    }).sort({ marketTime: -1 });
+
+    console.log(`📊 Calculating performance for ${signals.length} signals...`);
+
+    let updated = 0;
+    const results = {
+      profits: 0,
+      losses: 0,
+      errors: 0
+    };
+
+    // Process each signal
+    for (const signal of signals) {
+      try {
+        // Fetch latest price data for this symbol
+        const candles = await dataFetcher.fetch(signal.symbol);
+        if (!candles || candles.length === 0) {
+          console.log(`⚠️ No price data for ${signal.symbol}, skipping...`);
+          results.errors++;
+          continue;
+        }
+
+        const latestCandle = candles[candles.length - 1];
+        const closePrice = latestCandle.ohlc.close;
+        const entryPrice = signal.levels?.entry || signal.price;
+
+        if (!entryPrice) {
+          console.log(`⚠️ No entry price for signal ${signal._id}, skipping...`);
+          results.errors++;
+          continue;
+        }
+
+        // Determine if BUY or SELL
+        const isBuy = signal.signal?.action?.includes('BUY');
+
+        // Calculate P/L
+        // For BUY: profit if close > entry
+        // For SELL: profit if close < entry
+        let priceDiff, wasProfit;
+
+        if (isBuy) {
+          priceDiff = closePrice - entryPrice;
+          wasProfit = priceDiff > 0;
+        } else {
+          priceDiff = entryPrice - closePrice;
+          wasProfit = priceDiff > 0;
+        }
+
+        const profitLossPercent = (priceDiff / entryPrice) * 100;
+
+        // Update signal performance
+        signal.performance = {
+          outcome: wasProfit ? 'WIN' : 'LOSS',
+          entryFilled: true,
+          exitPrice: closePrice,
+          exitTime: latestCandle.timestamp,
+          targetHit: 'MARKET_CLOSE',
+          profitLoss: priceDiff,
+          profitLossPercent,
+          remarks: wasProfit
+            ? '✓ Market closed in profit (Target not hit)'
+            : '✗ Market closed in loss (Stop loss not hit)'
+        };
+
+        await signal.save();
+        updated++;
+
+        if (wasProfit) {
+          results.profits++;
+          console.log(`✅ ${signal.symbol} ${signal.signal.action}: +₹${Math.abs(priceDiff).toFixed(2)} (${profitLossPercent.toFixed(2)}%)`);
+        } else {
+          results.losses++;
+          console.log(`❌ ${signal.symbol} ${signal.signal.action}: -₹${Math.abs(priceDiff).toFixed(2)} (${profitLossPercent.toFixed(2)}%)`);
+        }
+
+      } catch (error) {
+        console.error(`Error processing signal ${signal._id}:`, error.message);
+        results.errors++;
+      }
+    }
+
+    console.log(`\n✅ Performance calculation complete!`);
+    console.log(`   Updated: ${updated} signals`);
+    console.log(`   Profits: ${results.profits} ✅`);
+    console.log(`   Losses: ${results.losses} ❌`);
+    console.log(`   Errors: ${results.errors} ⚠️`);
+
+    res.json({
+      success: true,
+      message: `Calculated performance for ${updated} signals`,
+      results: {
+        total: updated,
+        profits: results.profits,
+        losses: results.losses,
+        errors: results.errors,
+        winRate: updated > 0 ? ((results.profits / updated) * 100).toFixed(1) + '%' : '0%'
+      }
+    });
+
+  } catch (error) {
+    console.error('Error calculating performance:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

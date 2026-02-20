@@ -22,7 +22,8 @@
 
 .back-btn,
 .refresh-btn,
-.clear-all-btn {
+.clear-all-btn,
+.calculate-btn {
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
   border: 1px solid rgba(102, 126, 234, 0.5);
   color: #fff;
@@ -35,6 +36,11 @@
   backdrop-filter: blur(10px);
 }
 
+.calculate-btn {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 204, 112, 0.2));
+  border-color: rgba(0, 255, 136, 0.5);
+}
+
 .clear-all-btn {
   background: linear-gradient(135deg, rgba(255, 68, 68, 0.2), rgba(204, 0, 0, 0.2));
   border-color: rgba(255, 68, 68, 0.5);
@@ -45,6 +51,13 @@
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.3), rgba(118, 75, 162, 0.3));
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+}
+
+.calculate-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.3), rgba(0, 204, 112, 0.3));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 255, 136, 0.4);
+  border-color: #00ff88;
 }
 
 .clear-all-btn:hover {
