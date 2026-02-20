@@ -30,15 +30,16 @@ module.exports = {
     STRONG_SELL: 70
   },
 
-  // Indicator Weights (Baseline - used when regime detection unavailable)
+  // Indicator Weights - INTRADAY MODE (Optimized for 5m timeframe quick trades)
+  // Focus: Momentum + Volume for quick intraday moves
   INDICATOR_WEIGHTS: {
-    TREND: 0.28,                    // Reduced from 0.30 to accommodate SMC indicators
-    MOMENTUM: 0.25,
-    VOLUME: 0.15,
-    VOLATILITY: 0.10,
-    PATTERNS: 0.07,                 // Reduced from 0.10 to accommodate SMC indicators
-    SUPPORT_RESISTANCE: 0.15,       // Increased from 0.10 (now has 6 indicators vs 1)
-    OPTIONS: 0.05
+    MOMENTUM: 0.32,                 // INCREASED from 0.25 → Primary focus for intraday
+    VOLUME: 0.20,                   // INCREASED from 0.15 → Confirms quick moves
+    TREND: 0.20,                    // DECREASED from 0.28 → Less important for intraday
+    SUPPORT_RESISTANCE: 0.15,       // SAME → Still important for entry/exit
+    VOLATILITY: 0.08,               // DECREASED from 0.10 → Less critical
+    PATTERNS: 0.05,                 // DECREASED from 0.07 → Less critical
+    OPTIONS: 0.00                   // DISABLED for intraday (not relevant)
   },
 
   // Dynamic Weight Adjustments (multipliers applied to baseline based on market regime)
