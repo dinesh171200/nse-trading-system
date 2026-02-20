@@ -178,39 +178,10 @@ async function start() {
   // Generate signals immediately
   await generateSignals('initial');
 
-  // Schedule 1: Time-based - Run every 3 minutes regardless of price
-  cron.schedule('*/3 * * * *', () => generateSignals('3-minute schedule'));
+  // Schedule: Time-based - Run every 1 minute for real-time signal updates
+  cron.schedule('* * * * *', () => generateSignals('1-minute schedule'));
 
-  // Schedule 2: Price-change based - Check every minute for significant price movement
-  cron.schedule('* * * * *', async () => {
-    try {
-      // Get current prices
-      const latestData = await ChartData.find({})
-        .sort({ timestamp: -1 })
-        .limit(2);
-
-      for (const data of latestData) {
-        const symbol = data.symbol;
-        const currentPrice = data.ohlc.close;
-
-        // Check if price changed significantly
-        if (shouldGenerateSignal(symbol, currentPrice)) {
-          const priceChange = lastSignalPrices[symbol]
-            ? Math.abs((currentPrice - lastSignalPrices[symbol]) / lastSignalPrices[symbol]) * 100
-            : 0;
-
-          console.log(`\n⚡ Price change detected for ${symbol}: ${priceChange.toFixed(2)}% (threshold: ${PRICE_CHANGE_THRESHOLD}%)`);
-          await generateSignals(`price-change: ${priceChange.toFixed(2)}%`);
-          break; // Generate once, then wait for next check
-        }
-      }
-    } catch (error) {
-      // Silently fail - don't spam logs
-    }
-  });
-
-  console.log('✓ Price-change monitoring: Active (checks every minute)');
-  console.log(`✓ Price-change threshold: ${PRICE_CHANGE_THRESHOLD}% movement triggers new signal`);
+  console.log('✓ Signal generation: Every 1 minute (more responsive updates)');
 }
 
 start().catch(console.error);
