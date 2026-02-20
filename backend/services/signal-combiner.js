@@ -898,32 +898,30 @@ class SignalCombiner {
    * Determine signal action
    */
   determineAction(totalScore, confidence, percentageDifference, categoryScores, marketRegime, optionsSignal = null) {
-    // AGGRESSIVE INTRADAY MODE - Maximum Signal Generation
-    // Optimized for 5-10 signals per day (user needs more trading opportunities)
+    // BALANCED INTRADAY MODE - Quality Over Quantity
+    // Optimized for 2-5 HIGH-QUALITY signals per day
     //
-    // Target: MORE signals (quantity over perfection)
-    // Strategy: Very low thresholds for maximum opportunities
+    // Target: Fewer but BETTER signals (quality over quantity)
+    // Strategy: Moderate thresholds for reliable opportunities
     //
     // Thresholds Evolution:
-    // - Swing Trading: conf 58%, diff 12%, score 19 → 54% win rate, 10-20 signals/week
-    // - Previous Intraday: conf 54%, diff 10%, score 15 → 48-52% win rate, 2-5 signals/day
-    // - Enhanced: conf 52%, diff 8%, score 13 → Still too few signals (0 in 2.5 hours!)
-    // - NEW AGGRESSIVE: conf 48%, diff 5%, score 10 → 5-10 signals/day, 45-50% win rate
+    // - Too Aggressive: conf 45%, diff 3%, score 4 → 50 signals in 30 min (WAY TOO MUCH!)
+    // - BALANCED: conf 55%, diff 10%, score 18 → 2-5 signals/day, 55-60% win rate
 
-    // Rule 1: VERY AGGRESSIVE - Accept almost anything with slight edge
-    if (confidence < 45) {
-      return 'HOLD'; // LOWERED from 48% to 45% (barely above coin flip!)
+    // Rule 1: Require reasonable confidence
+    if (confidence < 55) {
+      return 'HOLD'; // Require at least 55% confidence for quality
     }
 
-    // Rule 2: VERY AGGRESSIVE - Accept minimal directional bias
-    if (percentageDifference < 3) {
-      return 'HOLD'; // LOWERED from 5% to 3% (almost nothing!)
+    // Rule 2: Require clear directional bias
+    if (percentageDifference < 10) {
+      return 'HOLD'; // Require 10% directional agreement for strength
     }
 
-    // Rule 3: EXTREME AGGRESSION - Trigger on ANY directional bias
-    // Base threshold: 4 (LOWERED from 5) - Current score is 4.9!
-    // If Options data conflicts: require 7 (was 8)
-    let requiredThreshold = 4;
+    // Rule 3: Require strong total score
+    // Base threshold: 18 (moderate strength required)
+    // If Options data conflicts: require 25
+    let requiredThreshold = 18;
 
     // Check if Options data conflicts with signal direction
     if (optionsSignal && optionsSignal.available) {
@@ -933,14 +931,14 @@ class SignalCombiner {
       // Determine signal direction from totalScore
       const signalDirection = totalScore > 0 ? 'BUY' : totalScore < 0 ? 'SELL' : 'NEUTRAL';
 
-      // Check for conflict (EXTREMELY LENIENT)
+      // Check for conflict
       if (signalDirection === 'BUY' && optionsAction === 'SELL' && optionsScore < -30) {
-        requiredThreshold = 7; // LOWERED from 8 to 7
+        requiredThreshold = 25; // Higher threshold if options conflict
       } else if (signalDirection === 'SELL' && optionsAction === 'BUY' && optionsScore > 30) {
-        requiredThreshold = 7; // LOWERED from 8 to 7
+        requiredThreshold = 25; // Higher threshold if options conflict
       } else if (optionsAction === signalDirection) {
-        // Options confirms! Trigger on anything
-        requiredThreshold = 2; // LOWERED from 3 to 2
+        // Options confirms! Lower threshold slightly
+        requiredThreshold = 15; // Slight boost if options confirm
       }
     }
 
