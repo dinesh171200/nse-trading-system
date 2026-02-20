@@ -180,6 +180,49 @@ const SignalCard = ({ signal }) => {
         </div>
       </div>
 
+      {/* Options Data - OI Changes, PCR, Analysis */}
+      {signal.indicators?.options_pcr?.available && (
+        <div className="options-analysis">
+          <h4 className="options-title">📊 Options Analysis (Live)</h4>
+
+          {/* OI Changes */}
+          <div className="oi-changes-grid">
+            <div className="oi-item">
+              <span className="oi-label">Call OI Δ</span>
+              <span className={`oi-value ${signal.indicators.options_pcr.value.callOIChange > 0 ? 'bearish' : 'neutral'}`}>
+                {signal.indicators.options_pcr.value.callOIChange > 0 ? '+' : ''}
+                {signal.indicators.options_pcr.value.callOIChange?.toLocaleString() || 0}
+              </span>
+            </div>
+            <div className="oi-item">
+              <span className="oi-label">Put OI Δ</span>
+              <span className={`oi-value ${signal.indicators.options_pcr.value.putOIChange > 0 ? 'bullish' : 'neutral'}`}>
+                {signal.indicators.options_pcr.value.putOIChange > 0 ? '+' : ''}
+                {signal.indicators.options_pcr.value.putOIChange?.toLocaleString() || 0}
+              </span>
+            </div>
+            <div className="oi-item">
+              <span className="oi-label">Net OI Δ</span>
+              <span className={`oi-value ${signal.indicators.options_pcr.value.netOIChange > 0 ? 'bullish' : signal.indicators.options_pcr.value.netOIChange < 0 ? 'bearish' : 'neutral'}`}>
+                {signal.indicators.options_pcr.value.netOIChange > 0 ? '+' : ''}
+                {signal.indicators.options_pcr.value.netOIChange?.toLocaleString() || 0}
+              </span>
+            </div>
+            <div className="oi-item">
+              <span className="oi-label">PCR</span>
+              <span className={`oi-value ${parseFloat(signal.indicators.options_pcr.value.pcr) > 1.2 ? 'bullish' : parseFloat(signal.indicators.options_pcr.value.pcr) < 0.8 ? 'bearish' : 'neutral'}`}>
+                {signal.indicators.options_pcr.value.pcr}
+              </span>
+            </div>
+          </div>
+
+          {/* Dynamic Analysis Text */}
+          <div className="options-interpretation">
+            <p>{signal.indicators.options_pcr.interpretation}</p>
+          </div>
+        </div>
+      )}
+
       {signal.reasoning && signal.reasoning.length > 0 && (
         <div className="signal-reasoning">
           <h4 className="reasoning-title">Analysis:</h4>

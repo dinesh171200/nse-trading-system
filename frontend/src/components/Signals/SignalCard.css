@@ -615,3 +615,109 @@
     font-size: 1.4rem;
   }
 }
+
+/* Options Analysis Section */
+.options-analysis {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 87, 34, 0.1) 100%);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: 10px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.options-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ff9800;
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* OI Changes Grid */
+.oi-changes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.oi-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.oi-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.oi-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.oi-value.bullish {
+  color: #4caf50;
+}
+
+.oi-value.bearish {
+  color: #f44336;
+}
+
+.oi-value.neutral {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Options Interpretation */
+.options-interpretation {
+  background: rgba(0, 0, 0, 0.2);
+  border-left: 3px solid #ff9800;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+.options-interpretation p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .oi-changes-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .oi-item {
+    padding: 8px;
+  }
+
+  .oi-label {
+    font-size: 10px;
+  }
+
+  .oi-value {
+    font-size: 13px;
+  }
+
+  .options-interpretation {
+    padding: 10px;
+  }
+
+  .options-interpretation p {
+    font-size: 11px;
+  }
+}
