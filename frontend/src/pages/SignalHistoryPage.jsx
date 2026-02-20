@@ -14,6 +14,7 @@ const SignalHistoryPage = () => {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // all, buy, sell
   const [symbolFilter, setSymbolFilter] = useState('all'); // all, NIFTY50, BANKNIFTY, DOWJONES
+  const [outcomeFilter, setOutcomeFilter] = useState('all'); // all, profit, loss
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -107,6 +108,13 @@ const SignalHistoryPage = () => {
     return 'low';
   };
 
+  // Calculate statistics
+  const completedTrades = history.filter(item => item.performance?.outcome && item.performance.outcome !== 'PENDING');
+  const wins = completedTrades.filter(item => item.performance.outcome === 'WIN');
+  const losses = completedTrades.filter(item => item.performance.outcome === 'LOSS');
+  const totalPL = completedTrades.reduce((sum, item) => sum + (item.performance.profitLoss || 0), 0);
+  const winRate = completedTrades.length > 0 ? ((wins.length / completedTrades.length) * 100).toFixed(1) : 0;
+
   const filteredHistory = history.filter(item => {
     // Filter by action
     let matchesAction = true;
@@ -117,7 +125,15 @@ const SignalHistoryPage = () => {
     let matchesSymbol = true;
     if (symbolFilter !== 'all') matchesSymbol = item.symbol === symbolFilter;
 
-    return matchesAction && matchesSymbol;
+    // Filter by outcome (profit/loss)
+    let matchesOutcome = true;
+    if (outcomeFilter === 'profit') {
+      matchesOutcome = item.performance?.outcome === 'WIN';
+    } else if (outcomeFilter === 'loss') {
+      matchesOutcome = item.performance?.outcome === 'LOSS';
+    }
+
+    return matchesAction && matchesSymbol && matchesOutcome;
   });
 
   if (loading) {
@@ -163,6 +179,34 @@ const SignalHistoryPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Statistics Summary */}
+      {completedTrades.length > 0 && (
+        <div className="stats-summary">
+          <div className="stat-card">
+            <div className="stat-label">Total Trades</div>
+            <div className="stat-value">{completedTrades.length}</div>
+          </div>
+          <div className="stat-card profit">
+            <div className="stat-label">Wins</div>
+            <div className="stat-value">{wins.length} ✅</div>
+          </div>
+          <div className="stat-card loss">
+            <div className="stat-label">Losses</div>
+            <div className="stat-value">{losses.length} ❌</div>
+          </div>
+          <div className={`stat-card ${totalPL >= 0 ? 'profit' : 'loss'}`}>
+            <div className="stat-label">Total P/L</div>
+            <div className="stat-value">
+              {totalPL >= 0 ? '+' : ''}₹{totalPL.toFixed(2)}
+            </div>
+          </div>
+          <div className={`stat-card ${winRate >= 50 ? 'profit' : 'loss'}`}>
+            <div className="stat-label">Win Rate</div>
+            <div className="stat-value">{winRate}%</div>
+          </div>
+        </div>
+      )}
 
       {/* Symbol Filters */}
       <div className="history-filters">
@@ -220,6 +264,31 @@ const SignalHistoryPage = () => {
         </div>
       </div>
 
+      {/* Profit/Loss Filters */}
+      <div className="history-filters">
+        <div className="filter-group">
+          <label className="filter-label">Result:</label>
+          <button
+            className={`filter-btn ${outcomeFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setOutcomeFilter('all')}
+          >
+            All Results
+          </button>
+          <button
+            className={`filter-btn profit-filter ${outcomeFilter === 'profit' ? 'active' : ''}`}
+            onClick={() => setOutcomeFilter('profit')}
+          >
+            ✅ Profit Only ({history.filter(s => s.performance?.outcome === 'WIN').length})
+          </button>
+          <button
+            className={`filter-btn loss-filter ${outcomeFilter === 'loss' ? 'active' : ''}`}
+            onClick={() => setOutcomeFilter('loss')}
+          >
+            ❌ Loss Only ({history.filter(s => s.performance?.outcome === 'LOSS').length})
+          </button>
+        </div>
+      </div>
+
       {/* Signals Grid */}
       {filteredHistory.length === 0 ? (
         <div className="empty-history">
@@ -233,10 +302,18 @@ const SignalHistoryPage = () => {
             const actionColor = getActionColor(item.signal?.action);
             const confidenceColor = getConfidenceColor(item.signal?.confidence);
 
+            // Determine outcome class for card background color
+            let outcomeClass = '';
+            if (item.performance?.outcome === 'WIN') {
+              outcomeClass = 'outcome-profit';
+            } else if (item.performance?.outcome === 'LOSS') {
+              outcomeClass = 'outcome-loss';
+            }
+
             return (
               <div
                 key={item._id || index}
-                className={`signal-card ${actionColor}`}
+                className={`signal-card ${actionColor} ${outcomeClass}`}
                 onClick={() => navigate(`/signal/${item._id}`)}
               >
                 <div className="card-header">

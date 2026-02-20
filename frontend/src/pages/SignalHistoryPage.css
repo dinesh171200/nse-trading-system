@@ -65,6 +65,71 @@
   flex: 1;
 }
 
+/* Statistics Summary */
+.stats-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+  border: 2px solid rgba(102, 126, 234, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+}
+
+.stat-card.profit {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.15) 0%, rgba(0, 204, 112, 0.15) 100%);
+  border-color: rgba(0, 255, 136, 0.4);
+}
+
+.stat-card.profit:hover {
+  box-shadow: 0 8px 24px rgba(0, 255, 136, 0.3);
+}
+
+.stat-card.loss {
+  background: linear-gradient(135deg, rgba(255, 68, 68, 0.15) 0%, rgba(204, 0, 0, 0.15) 100%);
+  border-color: rgba(255, 68, 68, 0.4);
+}
+
+.stat-card.loss:hover {
+  box-shadow: 0 8px 24px rgba(255, 68, 68, 0.3);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+}
+
+.stat-card.profit .stat-value {
+  color: #00ff88;
+}
+
+.stat-card.loss .stat-value {
+  color: #ff4444;
+}
+
 /* Filters */
 .history-filters {
   display: flex;
@@ -113,6 +178,39 @@
   border-color: #00ff88;
   color: #000;
   box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4);
+}
+
+/* Profit/Loss Filter Buttons */
+.filter-btn.profit-filter {
+  border-color: rgba(0, 255, 136, 0.5);
+}
+
+.filter-btn.profit-filter:hover {
+  background: rgba(0, 255, 136, 0.2);
+  border-color: #00ff88;
+}
+
+.filter-btn.profit-filter.active {
+  background: linear-gradient(135deg, #00ff88 0%, #00cc70 100%);
+  border-color: #00ff88;
+  color: #000;
+  box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4);
+}
+
+.filter-btn.loss-filter {
+  border-color: rgba(255, 68, 68, 0.5);
+}
+
+.filter-btn.loss-filter:hover {
+  background: rgba(255, 68, 68, 0.2);
+  border-color: #ff4444;
+}
+
+.filter-btn.loss-filter.active {
+  background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+  border-color: #ff4444;
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(255, 68, 68, 0.4);
 }
 
 /* Loading & Error States */
@@ -237,6 +335,31 @@
 .signal-card.sell:hover {
   border-color: #ff4444;
   box-shadow: 0 12px 40px rgba(255, 68, 68, 0.4);
+}
+
+/* Outcome-based Card Coloring (Profit/Loss) */
+.signal-card.outcome-profit {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.25) 0%, rgba(0, 204, 112, 0.2) 100%);
+  border-color: rgba(0, 255, 136, 0.6);
+  box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
+}
+
+.signal-card.outcome-profit:hover {
+  border-color: #00ff88;
+  box-shadow: 0 12px 40px rgba(0, 255, 136, 0.5);
+  transform: translateY(-8px);
+}
+
+.signal-card.outcome-loss {
+  background: linear-gradient(135deg, rgba(255, 68, 68, 0.25) 0%, rgba(204, 0, 0, 0.2) 100%);
+  border-color: rgba(255, 68, 68, 0.6);
+  box-shadow: 0 4px 20px rgba(255, 68, 68, 0.3);
+}
+
+.signal-card.outcome-loss:hover {
+  border-color: #ff4444;
+  box-shadow: 0 12px 40px rgba(255, 68, 68, 0.5);
+  transform: translateY(-8px);
 }
 
 .card-header {
