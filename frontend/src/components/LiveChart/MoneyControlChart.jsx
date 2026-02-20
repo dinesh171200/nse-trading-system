@@ -954,6 +954,27 @@ function MoneyControlChart({ initialSymbol = 'NIFTY50', onSymbolChange }) {
 
   return (
     <div className="moneycontrol-chart">
+      {/* Symbol Selector - MOVED TO TOP for better mobile UX */}
+      <div className="mc-chart-header">
+        <div className="mc-symbol-tabs">
+          {Object.keys(SYMBOLS).map((key) => (
+            <button
+              key={key}
+              className={`mc-tab ${selectedSymbol === key ? 'active' : ''}`}
+              onClick={() => handleSymbolChange(key)}
+            >
+              {SYMBOLS[key].name}
+            </button>
+          ))}
+        </div>
+
+        {lastUpdate && (
+          <div className="mc-update-time">
+            Updated: {lastUpdate.toLocaleTimeString('en-IN')}
+          </div>
+        )}
+      </div>
+
       {/* Price Display */}
       {priceInfo && (
         <div className="mc-price-display">
@@ -998,27 +1019,6 @@ function MoneyControlChart({ initialSymbol = 'NIFTY50', onSymbolChange }) {
           </div>
         </div>
       )}
-
-      {/* Symbol Selector */}
-      <div className="mc-chart-header">
-        <div className="mc-symbol-tabs">
-          {Object.keys(SYMBOLS).map((key) => (
-            <button
-              key={key}
-              className={`mc-tab ${selectedSymbol === key ? 'active' : ''}`}
-              onClick={() => handleSymbolChange(key)}
-            >
-              {SYMBOLS[key].name}
-            </button>
-          ))}
-        </div>
-
-        {lastUpdate && (
-          <div className="mc-update-time">
-            Updated: {lastUpdate.toLocaleTimeString('en-IN')}
-          </div>
-        )}
-      </div>
 
       {/* Chart Container */}
       <div className="mc-chart-wrapper">
