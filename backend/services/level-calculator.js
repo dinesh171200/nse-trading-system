@@ -116,11 +116,6 @@ class LevelCalculator {
     reasoning.push(`Target 2: ₹${target2.toFixed(2)} (+${t2Points} points / +0.7% - extended intraday move)`);
     reasoning.push(`Target 3: ₹${target3.toFixed(2)} (+${t3Points} points / +1.0% - strong intraday move)`);
 
-    // Mention nearby resistance levels
-    if (resistancesAbove.length > 0) {
-      reasoning.push(`Nearby resistances at: ₹${resistancesAbove.map(r => r.toFixed(2)).join(', ')}`);
-    }
-
     // Find recent high for additional context
     const recentHigh = this.findRecentHigh(candles, 20);
     if (recentHigh && recentHigh > currentPrice) {
@@ -133,8 +128,8 @@ class LevelCalculator {
       target1,
       target2,
       target3,
-      supportLevels: supports.filter(s => s < currentPrice),
-      resistanceLevels: resistancesAbove,
+      supportLevels: [],
+      resistanceLevels: [],
       reasoning
     };
   }
@@ -197,11 +192,6 @@ class LevelCalculator {
     reasoning.push(`Target 2: ₹${target2.toFixed(2)} (-${t2Points} points / -0.7% - extended intraday move)`);
     reasoning.push(`Target 3: ₹${target3.toFixed(2)} (-${t3Points} points / -1.0% - strong intraday move)`);
 
-    // Mention nearby support levels
-    if (supportsBelow.length > 0) {
-      reasoning.push(`Nearby supports at: ₹${supportsBelow.map(s => s.toFixed(2)).join(', ')}`);
-    }
-
     const recentLow = this.findRecentLow(candles, 20);
     if (recentLow && recentLow < currentPrice) {
       reasoning.push(`Recent swing low at ₹${recentLow.toFixed(2)} - potential support`);
@@ -213,8 +203,8 @@ class LevelCalculator {
       target1,
       target2,
       target3,
-      supportLevels: supportsBelow,
-      resistanceLevels: resistances.filter(r => r > currentPrice),
+      supportLevels: [],
+      resistanceLevels: [],
       reasoning
     };
   }
