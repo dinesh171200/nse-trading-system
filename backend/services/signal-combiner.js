@@ -25,6 +25,7 @@ const { INDICATOR_WEIGHTS, INDICATOR_IMPORTANCE } = require('../config/constants
 const levelCalculator = require('./level-calculator');
 const marketRegimeDetector = require('./market-regime-detector');
 const { calculatePCRSignal } = require('../indicators/options/pcr-oi-analysis');
+const { calculateSyntheticOI } = require('../indicators/options/synthetic-oi-analysis');
 
 class SignalCombiner {
   constructor() {
@@ -92,12 +93,27 @@ class SignalCombiner {
       // ENHANCED: Calculate Options signal for confirmation (PCR + OI + Max Pain)
       let optionsSignal = null;
       try {
+        // Try real NSE Options API first
         optionsSignal = await calculatePCRSignal(symbol);
         if (optionsSignal && optionsSignal.available) {
           indicatorResults.options_pcr = optionsSignal; // Add to indicator results
+          console.log('✅ Real Options data fetched from NSE');
         }
       } catch (error) {
-        console.log('Options signal skipped:', error.message);
+        console.log('NSE Options API failed:', error.message);
+      }
+
+      // FALLBACK: Use synthetic OI analysis if NSE API failed
+      if (!optionsSignal || !optionsSignal.available) {
+        try {
+          optionsSignal = calculateSyntheticOI(candles, indicatorResults);
+          if (optionsSignal) {
+            indicatorResults.options_pcr = optionsSignal;
+            console.log('✅ Synthetic Options data calculated from price/volume');
+          }
+        } catch (error) {
+          console.log('Synthetic Options calculation failed:', error.message);
+        }
       }
 
       // Determine signal action (with Options confirmation for better quality)
