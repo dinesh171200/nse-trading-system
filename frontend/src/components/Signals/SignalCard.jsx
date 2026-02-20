@@ -16,7 +16,7 @@ const SignalCard = ({ signal }) => {
     if (symbol === 'DOWJONES') {
       return '$'; // US Dollar for Dow Jones
     }
-    return '{currency}'; // Indian Rupee for Nifty/Bank Nifty
+    return '₹'; // Indian Rupee for Nifty/Bank Nifty
   };
 
   const currency = getCurrencySymbol(signal.symbol);
