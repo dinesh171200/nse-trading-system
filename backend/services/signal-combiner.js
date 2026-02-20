@@ -24,6 +24,7 @@ const indicators = require('../indicators');
 const { INDICATOR_WEIGHTS, INDICATOR_IMPORTANCE } = require('../config/constants');
 const levelCalculator = require('./level-calculator');
 const marketRegimeDetector = require('./market-regime-detector');
+const { calculatePCRSignal } = require('../indicators/options/pcr-oi-analysis');
 
 class SignalCombiner {
   constructor() {
@@ -88,8 +89,19 @@ class SignalCombiner {
       const bearishPercentage = 100 - bullishPercentage; // 0-100%
       const percentageDifference = Math.abs(bullishPercentage - bearishPercentage);
 
-      // Determine signal action (strict high-quality filter)
-      const action = this.determineAction(totalScore, confidence, percentageDifference, categoryScores, marketRegime);
+      // ENHANCED: Calculate Options signal for confirmation (PCR + OI + Max Pain)
+      let optionsSignal = null;
+      try {
+        optionsSignal = await calculatePCRSignal(symbol);
+        if (optionsSignal && optionsSignal.available) {
+          indicatorResults.options_pcr = optionsSignal; // Add to indicator results
+        }
+      } catch (error) {
+        console.log('Options signal skipped:', error.message);
+      }
+
+      // Determine signal action (with Options confirmation for better quality)
+      const action = this.determineAction(totalScore, confidence, percentageDifference, categoryScores, marketRegime, optionsSignal);
 
       // Determine signal strength
       const strength = this.determineStrength(confidence);
@@ -869,36 +881,59 @@ class SignalCombiner {
   /**
    * Determine signal action
    */
-  determineAction(totalScore, confidence, percentageDifference, categoryScores, marketRegime) {
-    // INTRADAY TRADING MODE
-    // Optimized for 2-5 signals per day with quick momentum trades
+  determineAction(totalScore, confidence, percentageDifference, categoryScores, marketRegime, optionsSignal = null) {
+    // ENHANCED INTRADAY TRADING MODE with Options Confirmation
+    // Optimized for 3-6 signals per day with improved win rate
     //
-    // Target: Multiple intraday opportunities with 48-52% win rate
-    // Strategy: Lower thresholds + momentum-focused for faster entries
+    // Target: More signals with better quality (50-55% win rate target)
+    // Strategy: Lower threshold (13) + Options data confirmation
     //
-    // Thresholds Comparison:
-    // - Swing Trading: conf 58%, diff 12%, score 19 → 10-20 signals/week, 54% win rate
-    // - INTRADAY MODE: conf 54%, diff 10%, score 15 → 2-5 signals/day, 48-52% win rate
+    // Thresholds Evolution:
+    // - Swing Trading: conf 58%, diff 12%, score 19 → 54% win rate, 10-20 signals/week
+    // - Previous Intraday: conf 54%, diff 10%, score 15 → 48-52% win rate, 2-5 signals/day
+    // - NEW Enhanced: conf 52%, diff 8%, score 13 + Options → 50-55% win rate, 3-6 signals/day
 
-    // Rule 1: Moderate confidence for intraday (lower threshold for more signals)
-    if (confidence < 54) {
-      return 'HOLD'; // Lowered from 58% to get more intraday opportunities
+    // Rule 1: Lower confidence threshold for more signals
+    if (confidence < 52) {
+      return 'HOLD'; // Lowered from 54% to 52%
     }
 
-    // Rule 2: Good directional bias required
-    if (percentageDifference < 10) {
-      return 'HOLD'; // Lowered from 12% for more sensitive entries
+    // Rule 2: Relaxed directional bias
+    if (percentageDifference < 8) {
+      return 'HOLD'; // Lowered from 10% to 8%
     }
 
-    // Rule 3: Intraday score thresholds (focus on quick momentum moves)
-    if (totalScore >= 15) {
-      // Lower threshold (15 vs 19) for faster intraday entries
+    // Rule 3: Smart threshold with Options confirmation
+    // Base threshold: 13 (lowered from 15)
+    // If Options data conflicts: require 18 (higher threshold for safety)
+    let requiredThreshold = 13;
+
+    // Check if Options data conflicts with signal direction
+    if (optionsSignal && optionsSignal.available) {
+      const optionsAction = optionsSignal.signal.action;
+      const optionsScore = optionsSignal.signal.score;
+
+      // Determine signal direction from totalScore
+      const signalDirection = totalScore > 0 ? 'BUY' : totalScore < 0 ? 'SELL' : 'NEUTRAL';
+
+      // Check for conflict
+      if (signalDirection === 'BUY' && optionsAction === 'SELL' && optionsScore < -30) {
+        requiredThreshold = 18; // Options strongly disagrees - need higher confidence
+      } else if (signalDirection === 'SELL' && optionsAction === 'BUY' && optionsScore > 30) {
+        requiredThreshold = 18; // Options strongly disagrees - need higher confidence
+      } else if (optionsAction === signalDirection) {
+        // Options confirms! Lower threshold even more
+        requiredThreshold = 11;
+      }
+    }
+
+    // Apply threshold and determine action
+    if (totalScore >= requiredThreshold) {
       if (totalScore >= 45) {
         return 'STRONG_BUY';
       }
       return 'BUY';
-    } else if (totalScore <= -15) {
-      // Lower threshold (15 vs 19) for faster intraday entries
+    } else if (totalScore <= -requiredThreshold) {
       if (totalScore <= -45) {
         return 'STRONG_SELL';
       }
