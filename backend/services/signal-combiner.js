@@ -920,10 +920,10 @@ class SignalCombiner {
       return 'HOLD'; // LOWERED from 5% to 3% (almost nothing!)
     }
 
-    // Rule 3: MAXIMUM AGGRESSION - Trigger on smallest movements
-    // Base threshold: 5 (LOWERED from 10) - Will trigger on almost anything!
-    // If Options data conflicts: require 8 (was 15)
-    let requiredThreshold = 5;
+    // Rule 3: EXTREME AGGRESSION - Trigger on ANY directional bias
+    // Base threshold: 4 (LOWERED from 5) - Current score is 4.9!
+    // If Options data conflicts: require 7 (was 8)
+    let requiredThreshold = 4;
 
     // Check if Options data conflicts with signal direction
     if (optionsSignal && optionsSignal.available) {
@@ -933,14 +933,14 @@ class SignalCombiner {
       // Determine signal direction from totalScore
       const signalDirection = totalScore > 0 ? 'BUY' : totalScore < 0 ? 'SELL' : 'NEUTRAL';
 
-      // Check for conflict (VERY LENIENT now)
+      // Check for conflict (EXTREMELY LENIENT)
       if (signalDirection === 'BUY' && optionsAction === 'SELL' && optionsScore < -30) {
-        requiredThreshold = 8; // LOWERED from 15 to 8
+        requiredThreshold = 7; // LOWERED from 8 to 7
       } else if (signalDirection === 'SELL' && optionsAction === 'BUY' && optionsScore > 30) {
-        requiredThreshold = 8; // LOWERED from 15 to 8
+        requiredThreshold = 7; // LOWERED from 8 to 7
       } else if (optionsAction === signalDirection) {
-        // Options confirms! Almost no threshold
-        requiredThreshold = 3; // LOWERED from 8 to 3
+        // Options confirms! Trigger on anything
+        requiredThreshold = 2; // LOWERED from 3 to 2
       }
     }
 
