@@ -105,7 +105,7 @@ const tradingSignalSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['ACTIVE', 'EXPIRED', 'HIT_TARGET', 'HIT_SL'],
+    enum: ['ACTIVE', 'EXPIRED', 'HIT_TARGET', 'HIT_SL', 'CLOSED_PROFIT', 'CLOSED_LOSS'],
     default: 'ACTIVE'
   },
   expiresAt: Date,
@@ -120,7 +120,7 @@ const tradingSignalSchema = new mongoose.Schema({
     exitTime: Date,
     targetHit: {
       type: String,
-      enum: ['TARGET1', 'TARGET2', 'TARGET3', 'STOPLOSS', 'NONE'],
+      enum: ['TARGET1', 'TARGET2', 'TARGET3', 'STOPLOSS', 'MARKET_CLOSE', 'NONE'],
       default: 'NONE'
     },
     profitLoss: Number,
