@@ -162,26 +162,88 @@ class SignalTracker {
         console.log(`   P/L: ${profitLoss > 0 ? '+' : ''}${this.formatPrice(Math.abs(profitLoss), signal.symbol)} (${profitLossPercent > 0 ? '+' : ''}${profitLossPercent.toFixed(2)}%)`);
 
       } else {
-        // Check if signal expired (4 hours old with no hit)
-        const signalAge = Date.now() - signal.timestamp.getTime();
-        const FOUR_HOURS = 4 * 60 * 60 * 1000;
+        // Check if market closed without hitting target/SL
+        const marketClosed = this.isMarketClosed();
 
-        if (signalAge > FOUR_HOURS) {
-          signal.status = 'EXPIRED';
+        if (marketClosed) {
+          // Compare current price vs entry to determine P/L
+          const priceDiff = isBuy ? (currentPrice - signal.levels.entry) : (signal.levels.entry - currentPrice);
+          const wasProfit = priceDiff > 0;
+
+          signal.status = wasProfit ? 'CLOSED_PROFIT' : 'CLOSED_LOSS';
           signal.performance = {
-            outcome: 'PENDING',
-            entryFilled: false,
-            targetHit: 'NONE',
-            remarks: 'Signal expired after 4 hours without hitting any level'
+            outcome: wasProfit ? 'WIN' : 'LOSS',
+            entryFilled: true,
+            exitPrice: currentPrice,
+            exitTime: latestCandle.timestamp,
+            targetHit: 'MARKET_CLOSE',
+            profitLoss: priceDiff,
+            profitLossPercent: (priceDiff / signal.levels.entry) * 100,
+            remarks: wasProfit
+              ? '✓ Market closed in profit (Target not hit)'
+              : '✗ Market closed in loss (Stop loss not hit)'
           };
+
           await signal.save();
-          console.log(`⏰ ${signal.symbol} signal expired after 4 hours`);
+
+          // Also update SignalHistory
+          await SignalHistory.findOneAndUpdate(
+            { symbol: signal.symbol, marketTime: signal.timestamp },
+            { $set: { performance: signal.performance } }
+          );
+
+          const emoji = wasProfit ? '✅' : '❌';
+          console.log(`${emoji} ${signal.symbol} signal closed at market close`);
+          console.log(`   Entry: ${this.formatPrice(signal.levels.entry, signal.symbol)} → Close: ${this.formatPrice(currentPrice, signal.symbol)}`);
+          console.log(`   P/L: ${priceDiff > 0 ? '+' : ''}${this.formatPrice(Math.abs(priceDiff), signal.symbol)} (${(priceDiff / signal.levels.entry * 100).toFixed(2)}%)`);
+          console.log(`   ${signal.performance.remarks}`);
+
+        } else {
+          // Check if signal expired (4 hours old with no hit and market still open)
+          const signalAge = Date.now() - signal.timestamp.getTime();
+          const FOUR_HOURS = 4 * 60 * 60 * 1000;
+
+          if (signalAge > FOUR_HOURS) {
+            signal.status = 'EXPIRED';
+            signal.performance = {
+              outcome: 'PENDING',
+              entryFilled: false,
+              targetHit: 'NONE',
+              remarks: 'Signal expired after 4 hours without hitting any level'
+            };
+            await signal.save();
+            console.log(`⏰ ${signal.symbol} signal expired after 4 hours`);
+          }
         }
       }
 
     } catch (error) {
       console.error(`Error checking signal ${signal._id}:`, error.message);
     }
+  }
+
+  /**
+   * Check if market is closed
+   * NSE: 9:15 AM - 3:30 PM IST (Mon-Fri)
+   */
+  isMarketClosed() {
+    const now = new Date();
+    const istTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+
+    const day = istTime.getDay(); // 0 = Sunday, 6 = Saturday
+    const hours = istTime.getHours();
+    const minutes = istTime.getMinutes();
+    const currentMinutes = hours * 60 + minutes;
+
+    // Weekend
+    if (day === 0 || day === 6) return true;
+
+    // Market hours: 9:15 AM (555 min) to 3:30 PM (930 min)
+    const marketOpen = 9 * 60 + 15;  // 555 minutes (9:15 AM)
+    const marketClose = 15 * 60 + 30; // 930 minutes (3:30 PM)
+
+    // Market closed if before 9:15 AM or after 3:30 PM
+    return currentMinutes < marketOpen || currentMinutes > marketClose;
   }
 
   /**

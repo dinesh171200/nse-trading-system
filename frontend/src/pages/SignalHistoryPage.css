@@ -73,6 +73,22 @@
   flex-wrap: wrap;
 }
 
+.filter-group {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 0.5rem;
+}
+
 .filter-btn {
   background: rgba(0, 0, 0, 0.3);
   border: 2px solid rgba(255, 255, 255, 0.2);
@@ -355,6 +371,83 @@
 .signal-card:hover .view-details {
   color: #00ff88;
   transform: translateX(4px);
+}
+
+/* Performance Badge (Profit/Loss) */
+.performance-badge {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 2px solid;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s;
+}
+
+.performance-badge.profit {
+  background: rgba(0, 255, 136, 0.15);
+  border-color: rgba(0, 255, 136, 0.5);
+  box-shadow: 0 4px 16px rgba(0, 255, 136, 0.2);
+}
+
+.performance-badge.loss {
+  background: rgba(255, 68, 68, 0.15);
+  border-color: rgba(255, 68, 68, 0.5);
+  box-shadow: 0 4px 16px rgba(255, 68, 68, 0.2);
+}
+
+.performance-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.performance-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.performance-pl {
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-family: 'Courier New', monospace;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.performance-badge.profit .performance-pl {
+  color: #00ff88;
+}
+
+.performance-badge.loss .performance-pl {
+  color: #ff4444;
+}
+
+.performance-percent {
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.performance-remarks {
+  font-size: 0.85rem;
+  color: #ccc;
+  line-height: 1.4;
+  font-style: italic;
+}
+
+.performance-badge.profit .performance-remarks {
+  color: rgba(0, 255, 136, 0.8);
+}
+
+.performance-badge.loss .performance-remarks {
+  color: rgba(255, 68, 68, 0.8);
 }
 
 /* Responsive */

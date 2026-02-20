@@ -1,6 +1,6 @@
 /**
- * Signal History Page
- * Shows all trading signals in a grid/list view
+ * Old/Running Trades Page
+ * Shows all trading signals with automatic profit/loss tracking
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -153,7 +153,7 @@ const SignalHistoryPage = () => {
         <button onClick={() => navigate('/')} className="back-btn">
           ← Back to Dashboard
         </button>
-        <h1 className="history-title">📜 Signal History</h1>
+        <h1 className="history-title">📊 Old/Running Trades</h1>
         <div className="header-actions">
           <button onClick={fetchHistory} className="refresh-btn" title="Refresh">
             🔄 Refresh
@@ -278,6 +278,32 @@ const SignalHistoryPage = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Profit/Loss Badge */}
+                {item.performance && item.performance.outcome && item.performance.outcome !== 'PENDING' && (
+                  <div className={`performance-badge ${item.performance.outcome === 'WIN' ? 'profit' : 'loss'}`}>
+                    <span className="performance-icon">
+                      {item.performance.outcome === 'WIN' ? '✅' : '❌'}
+                    </span>
+                    <div className="performance-details">
+                      <div className="performance-pl">
+                        {item.performance.profitLoss >= 0 ? '+' : ''}
+                        {formatPrice(Math.abs(item.performance.profitLoss || 0), item.symbol)}
+                        {item.performance.profitLossPercent && (
+                          <span className="performance-percent">
+                            ({item.performance.profitLossPercent >= 0 ? '+' : ''}
+                            {item.performance.profitLossPercent.toFixed(2)}%)
+                          </span>
+                        )}
+                      </div>
+                      {item.performance.remarks && (
+                        <div className="performance-remarks">
+                          {item.performance.remarks}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="card-footer">
                   <span className="view-details">
