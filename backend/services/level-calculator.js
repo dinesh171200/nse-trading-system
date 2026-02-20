@@ -63,63 +63,58 @@ class LevelCalculator {
   calculateBuyLevels(currentPrice, pivots, swingLevels, atr, candles) {
     const reasoning = [];
 
-    // Determine minimum stop loss based on instrument
-    const minStopLoss = currentPrice > 50000 ? 50 : 20; // Bank Nifty: 50 pts, Nifty: 20 pts
+    // INTRADAY MODE: Tight stop losses for quick trades
+    // Bank Nifty: 200-250 points (~0.35%), Nifty: 70-90 points (~0.35%)
+    const isBankNifty = currentPrice > 50000;
+    const intradayStopLoss = isBankNifty
+      ? currentPrice * 0.0035  // 0.35% for Bank Nifty (200-250 pts)
+      : currentPrice * 0.0035; // 0.35% for Nifty (70-90 pts)
 
-    // Find nearest support below for stop loss
-    let stopLoss = currentPrice - (atr * 2); // Fallback
+    // Use tight intraday stop loss
+    let stopLoss = currentPrice - intradayStopLoss;
+    const slPoints = Math.round(currentPrice - stopLoss);
+    reasoning.push(`Stop Loss at ₹${stopLoss.toFixed(2)} (-${slPoints} points / -0.35% for tight intraday risk management)`);
 
-    // Check pivot support levels
-    const supports = [pivots.support.s1, pivots.support.s2, pivots.support.s3];
-    const nearestSupport = supports
-      .filter(s => s < currentPrice)
-      .sort((a, b) => b - a)[0]; // Closest support below
+    // Optional: Adjust to recent swing low if it's closer and provides better protection
+    const recentLow = this.findRecentLow(candles, 10); // Look at last 10 candles only
+    if (recentLow && recentLow > stopLoss && recentLow < currentPrice) {
+      const distanceToLow = currentPrice - recentLow;
+      const maxDistance = isBankNifty ? 300 : 100; // Max 300 pts for BankNifty, 100 for Nifty
 
-    if (nearestSupport && (currentPrice - nearestSupport) >= minStopLoss && (currentPrice - nearestSupport) < 100) {
-      // Use pivot support if it provides adequate stop loss
-      stopLoss = nearestSupport - 2; // Place SL 2 points below support
-      const slDistance = currentPrice - stopLoss;
-      reasoning.push(`Stop Loss at ₹${stopLoss.toFixed(2)} (₹${slDistance.toFixed(2)} below entry, below S1 pivot at ₹${nearestSupport.toFixed(2)})`);
-    } else {
-      // Use swing low with minimum distance
-      const recentLow = this.findRecentLow(candles, 20);
-      if (recentLow && recentLow < currentPrice && (currentPrice - recentLow) >= minStopLoss) {
-        stopLoss = recentLow - 2;
-        const slDistance = currentPrice - stopLoss;
-        reasoning.push(`Stop Loss at ₹${stopLoss.toFixed(2)} (₹${slDistance.toFixed(2)} below entry, below swing low at ₹${recentLow.toFixed(2)})`);
-      } else {
-        // Use minimum stop loss distance
-        stopLoss = currentPrice - minStopLoss;
-        reasoning.push(`Stop Loss at ₹${stopLoss.toFixed(2)} (${minStopLoss} points below entry for risk management)`);
+      if (distanceToLow < maxDistance) {
+        stopLoss = recentLow - 5; // 5 points below recent low
+        const newSlPoints = Math.round(currentPrice - stopLoss);
+        reasoning.push(`Adjusted to recent swing low: ₹${stopLoss.toFixed(2)} (-${newSlPoints} points)`);
       }
     }
 
-    // Ensure minimum stop loss distance
+    // Ensure stop loss is reasonable (not too wide for intraday)
     const actualSL = currentPrice - stopLoss;
-    if (actualSL < minStopLoss) {
-      stopLoss = currentPrice - minStopLoss;
+    const maxSL = isBankNifty ? 300 : 100; // Maximum allowed SL
+    if (actualSL > maxSL) {
+      stopLoss = currentPrice - maxSL;
       reasoning.push(`Stop Loss adjusted to ₹${stopLoss.toFixed(2)} (minimum ${minStopLoss} points)`);
     }
 
     // Calculate risk for target calculation
     const risk = Math.abs(currentPrice - stopLoss);
 
-    // Find resistance levels above for targets
-    const resistances = [pivots.resistance.r1, pivots.resistance.r2, pivots.resistance.r3];
-    const resistancesAbove = resistances
-      .filter(r => r > currentPrice)
-      .sort((a, b) => a - b); // Ascending order
-
+    // INTRADAY MODE: Fixed percentage-based targets for quick profits
+    // Bank Nifty: 250pts (+0.4%), 450pts (+0.7%), 650pts (+1.0%)
+    // Nifty: 90pts (+0.4%), 160pts (+0.7%), 230pts (+1.0%)
     let target1, target2, target3;
 
-    // Always use risk-reward based targets for consistency (minimum 2:1, 3:1, 4:1)
-    target1 = currentPrice + (risk * 2);   // 2:1 R/R
-    target2 = currentPrice + (risk * 3);   // 3:1 R/R
-    target3 = currentPrice + (risk * 4);   // 4:1 R/R
+    target1 = currentPrice + (currentPrice * 0.004);  // +0.4% (quick intraday profit)
+    target2 = currentPrice + (currentPrice * 0.007);  // +0.7% (extended move)
+    target3 = currentPrice + (currentPrice * 0.010);  // +1.0% (strong move)
 
-    reasoning.push(`Target 1: ₹${target1.toFixed(2)} (2:1 risk/reward = ${(risk * 2).toFixed(2)} points)`);
-    reasoning.push(`Target 2: ₹${target2.toFixed(2)} (3:1 risk/reward = ${(risk * 3).toFixed(2)} points)`);
-    reasoning.push(`Target 3: ₹${target3.toFixed(2)} (4:1 risk/reward = ${(risk * 4).toFixed(2)} points)`);
+    const t1Points = Math.round(target1 - currentPrice);
+    const t2Points = Math.round(target2 - currentPrice);
+    const t3Points = Math.round(target3 - currentPrice);
+
+    reasoning.push(`Target 1: ₹${target1.toFixed(2)} (+${t1Points} points / +0.4% - quick intraday profit)`);
+    reasoning.push(`Target 2: ₹${target2.toFixed(2)} (+${t2Points} points / +0.7% - extended intraday move)`);
+    reasoning.push(`Target 3: ₹${target3.toFixed(2)} (+${t3Points} points / +1.0% - strong intraday move)`);
 
     // Mention nearby resistance levels
     if (resistancesAbove.length > 0) {
@@ -150,59 +145,57 @@ class LevelCalculator {
   calculateSellLevels(currentPrice, pivots, swingLevels, atr, candles) {
     const reasoning = [];
 
-    // Determine minimum stop loss based on instrument
-    const minStopLoss = currentPrice > 50000 ? 50 : 20; // Bank Nifty: 50 pts, Nifty: 20 pts
+    // INTRADAY MODE: Tight stop losses for quick short trades
+    // Bank Nifty: 200-250 points (~0.35%), Nifty: 70-90 points (~0.35%)
+    const isBankNifty = currentPrice > 50000;
+    const intradayStopLoss = isBankNifty
+      ? currentPrice * 0.0035  // 0.35% for Bank Nifty
+      : currentPrice * 0.0035; // 0.35% for Nifty
 
-    // Find nearest resistance above for stop loss
-    let stopLoss = currentPrice + (atr * 2); // Fallback
+    // Use tight intraday stop loss
+    let stopLoss = currentPrice + intradayStopLoss;
+    const slPoints = Math.round(stopLoss - currentPrice);
+    reasoning.push(`Stop Loss at ₹${stopLoss.toFixed(2)} (+${slPoints} points / +0.35% for tight intraday risk management)`);
 
-    const resistances = [pivots.resistance.r1, pivots.resistance.r2, pivots.resistance.r3];
-    const nearestResistance = resistances
-      .filter(r => r > currentPrice)
-      .sort((a, b) => a - b)[0]; // Closest resistance above
+    // Optional: Adjust to recent swing high if it's closer and provides better protection
+    const recentHigh = this.findRecentHigh(candles, 10); // Look at last 10 candles only
+    if (recentHigh && recentHigh < stopLoss && recentHigh > currentPrice) {
+      const distanceToHigh = recentHigh - currentPrice;
+      const maxDistance = isBankNifty ? 300 : 100; // Max 300 pts for BankNifty, 100 for Nifty
 
-    if (nearestResistance && (nearestResistance - currentPrice) >= minStopLoss && (nearestResistance - currentPrice) < 100) {
-      stopLoss = nearestResistance + 2;
-      const slDistance = stopLoss - currentPrice;
-      reasoning.push(`Stop Loss at ₹${stopLoss.toFixed(2)} (₹${slDistance.toFixed(2)} above entry, above R1 pivot at ₹${nearestResistance.toFixed(2)})`);
-    } else {
-      const recentHigh = this.findRecentHigh(candles, 20);
-      if (recentHigh && recentHigh > currentPrice && (recentHigh - currentPrice) >= minStopLoss) {
-        stopLoss = recentHigh + 2;
-        const slDistance = stopLoss - currentPrice;
-        reasoning.push(`Stop Loss at ₹${stopLoss.toFixed(2)} (₹${slDistance.toFixed(2)} above entry, above swing high at ₹${recentHigh.toFixed(2)})`);
-      } else {
-        stopLoss = currentPrice + minStopLoss;
-        reasoning.push(`Stop Loss at ₹${stopLoss.toFixed(2)} (${minStopLoss} points above entry for risk management)`);
+      if (distanceToHigh < maxDistance) {
+        stopLoss = recentHigh + 5; // 5 points above recent high
+        const newSlPoints = Math.round(stopLoss - currentPrice);
+        reasoning.push(`Adjusted to recent swing high: ₹${stopLoss.toFixed(2)} (+${newSlPoints} points)`);
       }
     }
 
-    // Ensure minimum stop loss distance
+    // Ensure stop loss is reasonable (not too wide for intraday)
     const actualSL = stopLoss - currentPrice;
-    if (actualSL < minStopLoss) {
-      stopLoss = currentPrice + minStopLoss;
-      reasoning.push(`Stop Loss adjusted to ₹${stopLoss.toFixed(2)} (minimum ${minStopLoss} points)`);
+    const maxSL = isBankNifty ? 300 : 100; // Maximum allowed SL
+    if (actualSL > maxSL) {
+      stopLoss = currentPrice + maxSL;
     }
 
-    // Calculate risk for target calculation
+    // Calculate risk for reference
     const risk = Math.abs(stopLoss - currentPrice);
 
-    // Find support levels below for targets
-    const supports = [pivots.support.s1, pivots.support.s2, pivots.support.s3];
-    const supportsBelow = supports
-      .filter(s => s < currentPrice)
-      .sort((a, b) => b - a); // Descending order
-
+    // INTRADAY MODE: Fixed percentage-based targets for quick short profits
+    // Bank Nifty: 250pts (-0.4%), 450pts (-0.7%), 650pts (-1.0%)
+    // Nifty: 90pts (-0.4%), 160pts (-0.7%), 230pts (-1.0%)
     let target1, target2, target3;
 
-    // Always use risk-reward based targets for consistency (minimum 2:1, 3:1, 4:1)
-    target1 = currentPrice - (risk * 2);   // 2:1 R/R
-    target2 = currentPrice - (risk * 3);   // 3:1 R/R
-    target3 = currentPrice - (risk * 4);   // 4:1 R/R
+    target1 = currentPrice - (currentPrice * 0.004);  // -0.4% (quick intraday profit)
+    target2 = currentPrice - (currentPrice * 0.007);  // -0.7% (extended move)
+    target3 = currentPrice - (currentPrice * 0.010);  // -1.0% (strong move)
 
-    reasoning.push(`Target 1: ₹${target1.toFixed(2)} (2:1 risk/reward = ${(risk * 2).toFixed(2)} points)`);
-    reasoning.push(`Target 2: ₹${target2.toFixed(2)} (3:1 risk/reward = ${(risk * 3).toFixed(2)} points)`);
-    reasoning.push(`Target 3: ₹${target3.toFixed(2)} (4:1 risk/reward = ${(risk * 4).toFixed(2)} points)`);
+    const t1Points = Math.round(currentPrice - target1);
+    const t2Points = Math.round(currentPrice - target2);
+    const t3Points = Math.round(currentPrice - target3);
+
+    reasoning.push(`Target 1: ₹${target1.toFixed(2)} (-${t1Points} points / -0.4% - quick intraday profit)`);
+    reasoning.push(`Target 2: ₹${target2.toFixed(2)} (-${t2Points} points / -0.7% - extended intraday move)`);
+    reasoning.push(`Target 3: ₹${target3.toFixed(2)} (-${t3Points} points / -1.0% - strong intraday move)`);
 
     // Mention nearby support levels
     if (supportsBelow.length > 0) {
