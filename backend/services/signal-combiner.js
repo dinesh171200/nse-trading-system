@@ -910,20 +910,20 @@ class SignalCombiner {
     // - Enhanced: conf 52%, diff 8%, score 13 → Still too few signals (0 in 2.5 hours!)
     // - NEW AGGRESSIVE: conf 48%, diff 5%, score 10 → 5-10 signals/day, 45-50% win rate
 
-    // Rule 1: Very low confidence threshold (48% = barely above random)
-    if (confidence < 48) {
-      return 'HOLD'; // LOWERED from 52% to 48%
+    // Rule 1: VERY AGGRESSIVE - Accept almost anything with slight edge
+    if (confidence < 45) {
+      return 'HOLD'; // LOWERED from 48% to 45% (barely above coin flip!)
     }
 
-    // Rule 2: Minimal directional bias required (just 5% difference)
-    if (percentageDifference < 5) {
-      return 'HOLD'; // LOWERED from 8% to 5%
+    // Rule 2: VERY AGGRESSIVE - Accept minimal directional bias
+    if (percentageDifference < 3) {
+      return 'HOLD'; // LOWERED from 5% to 3% (almost nothing!)
     }
 
-    // Rule 3: Aggressive threshold for maximum signals
-    // Base threshold: 10 (LOWERED from 13)
-    // If Options data conflicts: require 15 (still lower than before)
-    let requiredThreshold = 10;
+    // Rule 3: MAXIMUM AGGRESSION - Trigger on smallest movements
+    // Base threshold: 5 (LOWERED from 10) - Will trigger on almost anything!
+    // If Options data conflicts: require 8 (was 15)
+    let requiredThreshold = 5;
 
     // Check if Options data conflicts with signal direction
     if (optionsSignal && optionsSignal.available) {
@@ -933,14 +933,14 @@ class SignalCombiner {
       // Determine signal direction from totalScore
       const signalDirection = totalScore > 0 ? 'BUY' : totalScore < 0 ? 'SELL' : 'NEUTRAL';
 
-      // Check for conflict (less strict now)
+      // Check for conflict (VERY LENIENT now)
       if (signalDirection === 'BUY' && optionsAction === 'SELL' && optionsScore < -30) {
-        requiredThreshold = 15; // LOWERED from 18 to 15
+        requiredThreshold = 8; // LOWERED from 15 to 8
       } else if (signalDirection === 'SELL' && optionsAction === 'BUY' && optionsScore > 30) {
-        requiredThreshold = 15; // LOWERED from 18 to 15
+        requiredThreshold = 8; // LOWERED from 15 to 8
       } else if (optionsAction === signalDirection) {
-        // Options confirms! Lower threshold even more
-        requiredThreshold = 8; // LOWERED from 11 to 8
+        // Options confirms! Almost no threshold
+        requiredThreshold = 3; // LOWERED from 8 to 3
       }
     }
 
