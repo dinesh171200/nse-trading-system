@@ -41,9 +41,9 @@ function calculateSyntheticOI(candles, indicators) {
     synthetic: true, // Flag to indicate this is calculated, not from NSE
     value: {
       pcr: syntheticPCR.toFixed(2),
-      callOIChange: syntheticOIChanges.callOI,
-      putOIChange: syntheticOIChanges.putOI,
-      netOIChange: syntheticOIChanges.netOI,
+      callOIChange: syntheticOIChanges.callOI || 0,
+      putOIChange: syntheticOIChanges.putOI || 0,
+      netOIChange: syntheticOIChanges.netOI || 0,
       maxPain: Math.round(currentPrice) // Assume current price near max pain
     },
     signal: {
