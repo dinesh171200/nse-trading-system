@@ -125,13 +125,7 @@ function Dashboard() {
                   className="view-history-btn"
                   onClick={() => navigate('/history')}
                 >
-                  📜 Signal History
-                </button>
-                <button
-                  className="view-stats-btn"
-                  onClick={() => navigate('/backtesting')}
-                >
-                  📊 Backtesting
+                  📊 Old/Running Trades
                 </button>
               </div>
             </div>

@@ -57,8 +57,8 @@ const Header = ({ marketStatus, wsConnected }) => {
         <button className="nav-btn" onClick={() => navigate('/detailed')} title="Detailed Chart">
           📊 Detailed
         </button>
-        <button className="nav-btn" onClick={() => navigate('/history')} title="Signal History">
-          📜 History
+        <button className="nav-btn" onClick={() => navigate('/history')} title="Old/Running Trades">
+          📊 Old/Running Trades
         </button>
       </div>
 
